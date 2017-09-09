@@ -31,7 +31,7 @@ def run_task(*_):
         policy=policy,
         es=es,
         qf=qf,
-        batch_size=32,
+        batch_size=64,
         max_path_length=100,
         epoch_length=1000,
         min_pool_size=10000,
@@ -41,7 +41,7 @@ def run_task(*_):
         qf_learning_rate=1e-3,
         policy_learning_rate=1e-4,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
-        plot=True,
+        # plot=True,
     )
     algo.train()
 
