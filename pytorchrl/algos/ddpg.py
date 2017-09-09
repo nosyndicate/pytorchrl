@@ -5,9 +5,9 @@ import pyprind
 
 from rllab.algos.base import RLAlgorithm
 from rllab.algos.ddpg import SimpleReplayPool
+from rllab.misc import special
 from rllab.misc import ext
 import rllab.misc.logger as logger
-
 
 import torch
 from torch.autograd import Variable
@@ -16,6 +16,7 @@ from torch import optim
 
 from pytorchrl.misc.tensor_utils import running_average_tensor_list
 from pytorchrl.sampler import parallel_sampler
+from pytorchrl.sampler.utils import rollout
 
 class DDPG(RLAlgorithm):
     def __init__(
@@ -93,8 +94,6 @@ class DDPG(RLAlgorithm):
 
     def start_worker(self):
         parallel_sampler.populate_task(self.env, self.policy)
-        if self.plot:
-            plotter.init_plot(self.env, self.policy)
 
     def train(self):
         pool = SimpleReplayPool(
@@ -111,6 +110,8 @@ class DDPG(RLAlgorithm):
         terminal = False
         observation = self.env.reset()
 
+        sample_policy = copy.deepcopy(self.policy)
+
         for epoch in range(self.n_epoch):
             logger.push_prefix('epoch #%d | ' % epoch)
             logger.log("Training started")
@@ -122,17 +123,14 @@ class DDPG(RLAlgorithm):
                     # to the replay pool
                     observation = self.env.reset()
                     self.es.reset()
+                    sample_policy.reset()
                     self.es_path_returns.append(path_return)
                     path_length = 0
                     path_return = 0
 
-                action = self.es.get_action(itr, observation, policy=self.policy)
+                action = self.es.get_action(itr, observation, policy=sample_policy)
 
                 next_observation, reward, terminal, _ = self.env.step(action)
-
-                if self.plot:
-                    self.env.render()
-
                 path_length += 1
                 path_return += reward
 
@@ -151,6 +149,7 @@ class DDPG(RLAlgorithm):
                         # Train policy
                         batch = pool.random_batch(self.batch_size)
                         self.do_training(itr, batch)
+                    sample_policy.set_param_values(self.policy.get_param_values())
 
                 itr += 1
 
@@ -161,6 +160,14 @@ class DDPG(RLAlgorithm):
                 logger.save_itr_params(epoch, params)
             logger.dump_tabular(with_prefix=False)
             logger.pop_prefix()
+
+            if self.plot:
+                rollout(self.env, self.policy, animated=True,
+                    max_path_length=self.max_path_length,
+                    speedup=2)
+                if self.pause_for_plot:
+                    input("Plotting evaluation run: Press Enter to "
+                              "continue...")
         self.env.terminate()
 
     def do_training(self, itr, batch):
@@ -178,8 +185,8 @@ class DDPG(RLAlgorithm):
         terminals_mask = (1.0 - terminals).reshape(-1, 1)
         ys = rewards + terminals_mask * self.discount * next_qvals
 
-        self.train_qf(ys, obs, actions)
-        self.train_policy(obs)
+        qf_loss = self.train_qf(ys, obs, actions)
+        policy_surr = self.train_policy(obs)
 
         self.target_policy.set_param_values(
             running_average_tensor_list(
@@ -192,6 +199,10 @@ class DDPG(RLAlgorithm):
                 self.target_qf.get_param_values(),
                 self.qf.get_param_values(),
                 self.soft_target_tau))
+
+        self.qf_loss_averages.append(qf_loss)
+        self.policy_surr_averages.append(policy_surr)
+
 
     def train_qf(self, expected_qval, obs_val, actions_val):
         """
@@ -216,14 +227,18 @@ class DDPG(RLAlgorithm):
         expected_q = Variable(torch.from_numpy(expected_qval)).type(
             torch.FloatTensor)
 
+        q_vals = self.qf(obs, actions)
+
         # Define loss function
         loss_fn = nn.MSELoss()
-        loss = loss_fn(self.qf(obs, actions), expected_q)
+        loss = loss_fn(q_vals, expected_q)
 
         # Backpropagation and gradient descent
         self.qf_optimizer.zero_grad()
         loss.backward()
         self.qf_optimizer.step()
+
+        return loss.data.numpy()
 
     def train_policy(self, obs_val):
         """
@@ -238,6 +253,8 @@ class DDPG(RLAlgorithm):
         average_q.backward()
         self.policy_optimizer.step()
 
+        return average_q.data.numpy()
+
     def evaluate(self, epoch, pool):
         logger.log("Collecting samples for evaluation")
         paths = parallel_sampler.sample_paths(
@@ -245,7 +262,78 @@ class DDPG(RLAlgorithm):
             max_samples=self.eval_samples,
             max_path_length=self.max_path_length,
         )
+        average_discounted_return = np.mean(
+            [special.discount_return(path["rewards"], self.discount) for path in paths]
+        )
 
+        returns = [sum(path["rewards"]) for path in paths]
+
+        # all_qs = np.concatenate(self.q_averages)
+        # all_ys = np.concatenate(self.y_averages)
+
+        average_q_loss = np.mean(self.qf_loss_averages)
+        average_policy_surr = np.mean(self.policy_surr_averages)
+        average_action = np.mean(np.square(np.concatenate(
+            [path["actions"] for path in paths]
+        )))
+
+        # policy_reg_param_norm = np.linalg.norm(
+        #     self.policy.get_param_values(regularizable=True)
+        # )
+        # qfun_reg_param_norm = np.linalg.norm(
+        #     self.qf.get_param_values(regularizable=True)
+        # )
+
+        logger.record_tabular('Epoch', epoch)
+        logger.record_tabular('AverageReturn',
+                              np.mean(returns))
+        logger.record_tabular('StdReturn',
+                              np.std(returns))
+        logger.record_tabular('MaxReturn',
+                              np.max(returns))
+        logger.record_tabular('MinReturn',
+                              np.min(returns))
+        if len(self.es_path_returns) > 0:
+            logger.record_tabular('AverageEsReturn',
+                                  np.mean(self.es_path_returns))
+            logger.record_tabular('StdEsReturn',
+                                  np.std(self.es_path_returns))
+            logger.record_tabular('MaxEsReturn',
+                                  np.max(self.es_path_returns))
+            logger.record_tabular('MinEsReturn',
+                                  np.min(self.es_path_returns))
+        logger.record_tabular('AverageDiscountedReturn',
+                              average_discounted_return)
+        logger.record_tabular('AverageQLoss', average_q_loss)
+        logger.record_tabular('AveragePolicySurr', average_policy_surr)
+        # logger.record_tabular('AverageQ', np.mean(all_qs))
+        # logger.record_tabular('AverageAbsQ', np.mean(np.abs(all_qs)))
+        # logger.record_tabular('AverageY', np.mean(all_ys))
+        # logger.record_tabular('AverageAbsY', np.mean(np.abs(all_ys)))
+        # logger.record_tabular('AverageAbsQYDiff',
+        #                       np.mean(np.abs(all_qs - all_ys)))
+        logger.record_tabular('AverageAction', average_action)
+
+        # logger.record_tabular('PolicyRegParamNorm',
+        #                       policy_reg_param_norm)
+        # logger.record_tabular('QFunRegParamNorm',
+        #                       qfun_reg_param_norm)
+
+        # TODO (ewei), may need to add log_diagnostics method
+        # in policy class
+        # self.env.log_diagnostics(paths)
+        # self.policy.log_diagnostics(paths)
+
+        self.qf_loss_averages = []
+        self.policy_surr_averages = []
+
+        self.q_averages = []
+        self.y_averages = []
+        self.es_path_returns = []
+
+    def update_plot(self):
+        if self.plot:
+            plotter.update_plot(self.policy, self.max_path_length)
 
     def get_epoch_snapshot(self, epoch):
         return dict(
