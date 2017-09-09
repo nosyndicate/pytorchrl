@@ -2,11 +2,11 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 
-
+from pytorchrl.policies.base import Policy
 from pytorchrl.core.parameterized import Parameterized
 
 
-class DeterministicMLPPolicy(nn.Module, Parameterized):
+class DeterministicMLPPolicy(Policy, Parameterized):
     """
     Deterministic Policy
     """

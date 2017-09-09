@@ -8,11 +8,14 @@ from rllab.algos.ddpg import SimpleReplayPool
 from rllab.misc import ext
 import rllab.misc.logger as logger
 
+
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
 from torch import optim
 
+from pytorchrl.misc.tensor_utils import running_average_tensor_list
+from pytorchrl.sampler import parallel_sampler
 
 class DDPG(RLAlgorithm):
     def __init__(
@@ -48,18 +51,21 @@ class DDPG(RLAlgorithm):
         self.env = env
         self.observation_dim = np.prod(env.observation_space.shape)
         self.action_dim = np.prod(env.action_space.shape)
-        self.qf = qf
         self.policy = policy
+        self.qf = qf
         self.es = es
-        self.replay_pool_size = replay_pool_size
-        self.discount = discount
+        self.batch_size = batch_size
         self.n_epoch = n_epochs
         self.epoch_length = epoch_length
-        self.max_path_length = max_path_length
         self.min_pool_size = min_pool_size
+        self.replay_pool_size = replay_pool_size
+        self.discount = discount
+        self.max_path_length = max_path_length
+        self.qf_weight_decay = qf_weight_decay
+        # The update method and learning are using below
+        self.eval_samples = eval_samples
         self.soft_target_tau = soft_target_tau
         self.n_updates_per_sample = n_updates_per_sample
-        self.batch_size = batch_size
         self.include_horizon_terminal_transitions = include_horizon_terminal_transitions
 
         self.plot = plot
@@ -71,7 +77,7 @@ class DDPG(RLAlgorithm):
 
         # Define optimizer
         self.qf_optimizer = qf_update_method(self.qf.parameters(),
-            lr=qf_learning_rate, weight_decay=qf_weight_decay)
+            lr=qf_learning_rate, weight_decay=self.qf_weight_decay)
         self.policy_optimizer = policy_update_method(self.policy.parameters(),
             lr=policy_learning_rate)
 
@@ -85,12 +91,19 @@ class DDPG(RLAlgorithm):
 
         self.scale_reward = scale_reward
 
+    def start_worker(self):
+        parallel_sampler.populate_task(self.env, self.policy)
+        if self.plot:
+            plotter.init_plot(self.env, self.policy)
+
     def train(self):
         pool = SimpleReplayPool(
             max_pool_size=self.replay_pool_size,
             observation_dim=self.observation_dim,
             action_dim=self.action_dim
         )
+
+        self.start_worker()
 
         itr = 0
         path_length = 0
@@ -169,12 +182,16 @@ class DDPG(RLAlgorithm):
         self.train_policy(obs)
 
         self.target_policy.set_param_values(
-            self._running_average_tensor_list(self.target_policy.get_param_values(),
-                self.policy.get_param_values(), self.soft_target_tau))
+            running_average_tensor_list(
+                self.target_policy.get_param_values(),
+                self.policy.get_param_values(),
+                self.soft_target_tau))
 
         self.target_qf.set_param_values(
-            self._running_average_tensor_list(self.target_qf.get_param_values(),
-                self.qf.get_param_values(), self.soft_target_tau))
+            running_average_tensor_list(
+                self.target_qf.get_param_values(),
+                self.qf.get_param_values(),
+                self.soft_target_tau))
 
     def train_qf(self, expected_qval, obs_val, actions_val):
         """
@@ -221,33 +238,14 @@ class DDPG(RLAlgorithm):
         average_q.backward()
         self.policy_optimizer.step()
 
-    def _running_average_tensor_list(self, first_list, second_list, rate):
-        """
-        Return the result of
-        first * (1 - rate) + second * rate
-
-        Parameter
-        ---------
-        first_list (list) : A list of Tensors
-        second_list (list) : A list of Tensors, should have the same format
-            as first.
-        rate (float): a learning rate, in [0, 1]
-
-        Returns
-        -------
-        results (list): A list of Tensors with computed results.
-        """
-        results = []
-        assert len(first_list) == len(second_list)
-        for first_t, second_t in zip(first_list, second_list):
-            assert first_t.shape == second_t.shape
-            result_tensor = first_t * (1 - rate) + second_t * rate
-            results.append(result_tensor)
-
-        return results
-
     def evaluate(self, epoch, pool):
-        pass
+        logger.log("Collecting samples for evaluation")
+        paths = parallel_sampler.sample_paths(
+            policy_params=self.policy.get_param_values(),
+            max_samples=self.eval_samples,
+            max_path_length=self.max_path_length,
+        )
+
 
     def get_epoch_snapshot(self, epoch):
         return dict(
