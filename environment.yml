@@ -1,4 +1,4 @@
-name: pytorch
+name: pytorchrl
 channels:
     - https://conda.anaconda.org/soumith 
     - https://conda.anaconda.org/kne 
