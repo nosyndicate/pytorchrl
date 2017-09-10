@@ -1,8 +1,8 @@
 name: pytorchrl
 channels:
-    - https://conda.anaconda.org/soumith 
-    - https://conda.anaconda.org/kne 
-    - https://conda.anaconda.org/tlatorre 
+    - https://conda.anaconda.org/soumith
+    - https://conda.anaconda.org/kne
+    - https://conda.anaconda.org/tlatorre
     - https://conda.anaconda.org/cjs14
     - https://conda.anaconda.org/menpo
     - jjhelmus
@@ -24,3 +24,4 @@ dependencies:
         - cached_property
         - pyprind
         - git+https://github.com/neocxi/Lasagne.git@484866cf8b38d878e92d521be445968531646bb8#egg=Lasagne
+        - cloudpickle
