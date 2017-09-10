@@ -1,6 +1,9 @@
 import numpy as np
 import gym
 
+from rllab.envs.gym_env import GymEnv
+from rllab.envs.normalized_env import normalize
+
 from pytorchrl.algos.ddpg import DDPG
 from pytorchrl.exploration_strategies.ou_strategy import OUStrategy
 from pytorchrl.policies.deterministic_mlp_policy import DeterministicMLPPolicy
@@ -8,7 +11,7 @@ from pytorchrl.q_functions.continuous_mlp_q_function import ContinuousMLPQFuncti
 
 
 def run_task(*_):
-    env = gym.make('Pendulum-v0')
+    env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
 
     observation_dim = np.prod(env.observation_space.shape)
     action_dim = np.prod(env.action_space.shape)
@@ -17,8 +20,7 @@ def run_task(*_):
         observation_dim=observation_dim,
         action_dim=action_dim,
         # The neural network policy should have two hidden layers, each with 32 hidden units.
-        hidden_sizes=(400, 300)
-    )
+        hidden_sizes=(400, 300))
 
     es = OUStrategy(action_space=env.action_space)
 
