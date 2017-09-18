@@ -24,9 +24,23 @@ class Policy(nn.Module):
     def reset(self):
         pass
 
+    def log_diagnostics(self, paths):
+        """
+        Log extra information per iteration based on the collected paths
+        """
+        pass
+
+    @property
+    def recurrent(self):
+        """
+        Indicate whether the policy is recurrent.
+        """
+        return False
+
 
 class StochasticPolicy(Policy):
 
+    @property
     def distribution(self):
         """
         Get the parameters of the policy distribution as Variables.

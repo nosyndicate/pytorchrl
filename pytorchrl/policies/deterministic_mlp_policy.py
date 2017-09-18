@@ -2,6 +2,8 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 
+from rllab.misc.overrides import overrides
+
 from pytorchrl.policies.base import Policy
 from pytorchrl.core.parameterized import Parameterized
 
@@ -19,14 +21,22 @@ class DeterministicMLPPolicy(Policy, Parameterized):
     ):
         """
         Create Policy Network.
+
+        Parameters
+        ----------
+        observation_dim (int): observation dimension. If this is not a
+            integer, than it should be compatible with type integer.
+        action_dim (int): action dimension. If this is not a integer, than
+            it should be compatible with type integer.
+        # TODO (ewei)
         """
         super(DeterministicMLPPolicy, self).__init__()
 
-        self.observation_dim = observation_dim
-        self.action_dim = action_dim
+        self.observation_dim = int(observation_dim)
+        self.action_dim = int(action_dim)
 
         # Define network
-        sizes = [int(self.observation_dim)] + list(hidden_sizes)
+        sizes = [self.observation_dim] + list(hidden_sizes)
         submodules = []
         for index, size in enumerate(sizes):
             if index != len(sizes) - 1:
@@ -34,7 +44,7 @@ class DeterministicMLPPolicy(Policy, Parameterized):
                 submodules.append(hidden_nonlinearity())
 
         # Add the last layer
-        submodules.append(nn.Linear(sizes[len(sizes) - 1], int(self.action_dim)))
+        submodules.append(nn.Linear(sizes[len(sizes) - 1], self.action_dim))
         submodules.append(nn.Tanh())
 
         self.model = nn.Sequential(*submodules)
@@ -78,5 +88,10 @@ class DeterministicMLPPolicy(Policy, Parameterized):
 
         return action.data.numpy(), dict()
 
+    @overrides
     def get_internal_params(self):
         return self.parameters()
+
+    @overrides
+    def get_internal_named_params(self):
+        return self.named_parameters()

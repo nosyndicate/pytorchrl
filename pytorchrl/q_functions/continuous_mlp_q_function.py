@@ -2,6 +2,8 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 
+from rllab.misc.overrides import overrides
+
 from pytorchrl.core.parameterized import Parameterized
 
 
@@ -91,5 +93,10 @@ class ContinuousMLPQFunction(nn.Module, Parameterized):
         q_value_variable = self.forward(obs_variable, action_variable)
         return q_value_variable.data.numpy()
 
+    @overrides
     def get_internal_params(self):
         return self.parameters()
+
+    @overrides
+    def get_internal_named_params(self):
+        return self.named_parameters()
