@@ -189,16 +189,12 @@ class DDPG(RLAlgorithm):
         policy_surr = self.train_policy(obs)
 
         self.target_policy.set_param_values(
-            running_average_tensor_list(
-                self.target_policy.get_param_values(),
-                self.policy.get_param_values(),
-                self.soft_target_tau))
+            self.target_policy.get_param_values() * (1 - self.soft_target_tau) +
+            self.policy.get_param_values() * self.soft_target_tau)
 
         self.target_qf.set_param_values(
-            running_average_tensor_list(
-                self.target_qf.get_param_values(),
-                self.qf.get_param_values(),
-                self.soft_target_tau))
+            self.target_qf.get_param_values() * (1 - self.soft_target_tau) +
+            self.qf.get_param_values() * self.soft_target_tau)
 
         self.qf_loss_averages.append(qf_loss)
         self.policy_surr_averages.append(policy_surr)

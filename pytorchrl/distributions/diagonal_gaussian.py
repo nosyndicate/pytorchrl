@@ -1,9 +1,9 @@
 import numpy as np
 
 import torch
-from torch.autograd import Variable
 
 from pytorchrl.distributions.base import Distribution
+from pytorchrl.misc.tensor_utils import constant
 
 
 class DiagonalGaussian(Distribution):
@@ -56,21 +56,63 @@ class DiagonalGaussian(Distribution):
         # Convert into a sample of standard normal
         zs = (a - self.means) / (self.log_stds.exp())
 
-        # pytorch require multiplication take either two variables
-        # or two tensors. And it is recommended to wrap a constant
-        # in a variable which is kind of silly to me.
-        # https://discuss.pytorch.org/t/adding-a-scalar/218
-        constant = float(np.log(2 * np.pi))
-        constant_part = Variable(torch.Tensor([constant])).type(torch.FloatTensor)
-        dimension_part = Variable(torch.Tensor([self.dim])).type(torch.FloatTensor)
-        half = Variable(torch.Tensor([0.5])).type(torch.FloatTensor)
-
         # TODO (ewei), we feel this equation is not correct.
         # Mainly the first line
         return - self.log_stds.sum() - \
-            half * zs.pow(2).sum() - \
-            half * dimension_part * constant_part
+            constant(0.5) * zs.pow(2).sum() - \
+            constant(0.5) * constant(float(self.dim)) * constant(float(np.log(2 * np.pi)))
 
-    def kl(self, other):
-        pass
+    def kl_div(self, other):
+        """
+        Given the distribution parameters of two diagonal multivariate Gaussians,
+        compute their KL divergence (vectorized)
 
+        https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Kullback.E2.80.93Leibler_divergence_for_multivariate_normal_distributions
+
+        In general, for two n-dimensional distributions, we have
+
+        D_KL(N1||N2) =
+        1/2 ( tr(Σ_2^{-1}Σ_1) + (μ_2 - μ_1)^T Σ_2^{-1} (μ_2 - μ_1) - n + ln(det(Σ_2) / det(Σ_1)) )
+
+        Here, Σ_1 and Σ_2 are diagonal. Hence this equation can be simplified.
+        In terms of the parameters of this method,
+
+        determinant of diagonal matrix is product of diagonal, thus
+        - ln(det(Σ_2) / det(Σ_1)) = sum(2 * (log_stds_2 - log_stds_1), axis=-1)
+
+        inverse of diagonal matrix is the diagonal matrix of elements at diagonal inverted, thus
+        - (μ_2 - μ_1)^T Σ_2^{-1} (μ_2 - μ_1) = sum((means_1 - means_2)^2 / vars_2, axis=-1)
+
+        trace is sum of the diagonal elements
+        - tr(Σ_2^{-1}Σ_1) = sum(vars_1 / vars_2, axis=-1)
+
+        Where
+
+        - vars_1 = exp(2 * log_stds_1)
+
+        - vars_2 = exp(2 * log_stds_2)
+
+        Combined together, we have
+
+        D_KL(N1||N2)
+        = 1/2 ( tr(Σ_2^{-1}Σ_1) + (μ_2 - μ_1)^T Σ_2^{-1} (μ_2 - μ_1) - n + ln(det(Σ_2) / det(Σ_1)) )
+        = sum(1/2 * ((vars_1 - vars_2) / vars_2 + (means_1 - means_2)^2 / vars_2 + 2 * (log_stds_2 - log_stds_1)), axis=-1)
+        = sum( ((means_1 - means_2)^2 + vars_1 - vars_2) / (2 * vars_2) + (log_stds_2 - log_stds_1)), axis=-1)
+
+        Parameters
+        ----------
+        other (DiagonalGaussian):
+
+        Returns
+        -------
+        kl_div (Variable):
+        """
+        # constant should wrap in Variable
+        variance = (constant(2.0) * self.log_stds).exp()
+        other_variance = (constant(2.0) * other.log_stds).exp()
+
+        kl_div = (((self.means - other.means).pow(2) + variance - other_variance) /
+            (constant(2.0) * other_variance + constant(1e-8)) +
+            other.log_stds - self.log_stds).sum()
+
+        return kl_div

@@ -1,3 +1,7 @@
+import torch
+from torch.autograd import Variable
+
+
 def running_average_tensor_list(first_list, second_list, rate):
         """
         Return the result of
@@ -22,3 +26,23 @@ def running_average_tensor_list(first_list, second_list, rate):
             results.append(result_tensor)
 
         return results
+
+def constant(value):
+    """
+    Return a torch Variable for computation. This is a function to help
+    write short code.
+
+    pytorch require multiplication take either two variables
+    or two tensors. And it is recommended to wrap a constant
+    in a variable which is kind of silly to me.
+    https://discuss.pytorch.org/t/adding-a-scalar/218
+
+    Parameters
+    ----------
+    value (float): The value to be wrapped in Variable
+
+    Returns
+    -------
+    constant (Variable): The Variable wrapped the value for computation.
+    """
+    return Variable(torch.Tensor([value])).type(torch.FloatTensor)
