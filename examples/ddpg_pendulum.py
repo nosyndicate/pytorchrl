@@ -17,6 +17,10 @@ class VG(VariantGenerator):
     def seed(self):
         return [1, 11, 21, 31, 41]
 
+    @variant
+    def name(self):
+        return ['pytorch']
+
 def run_task(*_):
     env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
 
@@ -59,7 +63,7 @@ variants = VG().variants()
 for v in variants:
     run_experiment_lite(
         run_task,
-        exp_prefix="ddpg_pendulum",
+        exp_prefix="ddpg_pendulum_test",
         # Number of parallel workers for sampling
         n_parallel=1,
         # Only keep the snapshot parameters for the last iteration

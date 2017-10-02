@@ -171,6 +171,13 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
         else:
             log_stds = self.log_std_model
 
+        # Set the minimum log_std
+        if self.min_std is not None:
+            min_log_std = Variable(torch.Tensor(
+                np.log([self.min_std]))).type(torch.FloatTensor)
+            # max operation requires two variables
+            log_stds = torch.max(log_std, min_log_std)
+
         return means, log_stds
 
     def get_action(self, observation):

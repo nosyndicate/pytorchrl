@@ -20,10 +20,13 @@ class TRPO(BatchPolopt):
     def __init__(
         self,
         step_size=0.01,
+        hessian_free_method='finite',
         **kwargs
     ):
 
         super(TRPO, self).__init__(**kwargs)
+        self.hessian_free_method = hessian_free_method
+
 
 
     @overrides
@@ -72,6 +75,7 @@ class TRPO(BatchPolopt):
         flat_kl_grad = self.policy.get_grad_values()
 
         def Fx(v):
+
             return self.finite_diff_hv(self.policy, self.kl_divergence, flat_kl_grad, v)
         descent_direction = self.cg(Fx, flat_grad)
 
@@ -108,6 +112,7 @@ class TRPO(BatchPolopt):
         all_obs (Variable):
         all_actions (Variable):
         all_adv (Variable):
+        old_dist (dict)
 
         Returns
         -------
@@ -167,6 +172,10 @@ class TRPO(BatchPolopt):
         eps (): A small perturbation for finite difference computation.
         damping (): A small damping factor to ensure that the Fisher information matrix is positive definite.
         """
+        pass
+
+    def pearlmutter_hvp():
+        pass
 
     def linearsearch():
         pass
