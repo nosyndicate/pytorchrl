@@ -1,14 +1,11 @@
-import numpy as np
-import gym
-
+from rllab.algos.trpo import TRPO
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
+from rllab.optimizers.conjugate_gradient_optimizer import ConjugateGradientOptimizer, FiniteDifferenceHvp
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
-from rllab.misc.instrument import run_experiment_lite
-from rllab.misc.instrument import VariantGenerator, variant
+from rllab.misc.instrument import run_experiment_lite, VariantGenerator, variant
+from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 
-from pytorchrl.algos.trpo import TRPO
-from pytorchrl.policies.gaussian_mlp_policy import GaussianMLPPolicy
 
 
 class VG(VariantGenerator):
@@ -18,21 +15,21 @@ class VG(VariantGenerator):
 
     @variant
     def name(self):
-        return ['pytorch']
+        return ['rllab']
 
 def run_task(*_):
+    # Please note that different environments with different action spaces may require different
+    # policies. For example with a Box action space, a GaussianMLPPolicy works, but for a Discrete
+    # action space may need to use a CategoricalMLPPolicy (see the trpo_gym_cartpole.py example)
     env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
 
-    observation_dim = np.prod(env.observation_space.shape)
-    action_dim = np.prod(env.action_space.shape)
-
     policy = GaussianMLPPolicy(
-        observation_dim=observation_dim,
-        action_dim=action_dim,
+        env_spec=env.spec,
         # The neural network policy should have two hidden layers, each with 32 hidden units.
-        hidden_sizes=(32, 32))
+        hidden_sizes=(32, 32)
+    )
 
-    baseline= LinearFeatureBaseline(env_spec=env.spec)
+    baseline = LinearFeatureBaseline(env_spec=env.spec)
 
     algo = TRPO(
         env=env,
@@ -43,6 +40,7 @@ def run_task(*_):
         n_itr=50,
         discount=0.99,
         step_size=0.01,
+        optimizer=ConjugateGradientOptimizer(hvp_approach=FiniteDifferenceHvp(base_eps=1e-5, symmetric=False))
         # Uncomment both lines (this and the plot parameter below) to enable plotting
         # plot=True,
     )
@@ -53,16 +51,14 @@ variants = VG().variants()
 for v in variants:
     run_experiment_lite(
         run_task,
-        exp_prefix="trpo_pendulum",
+        exp_prefix='trpo_rllab_pendulum',
         # Number of parallel workers for sampling
         n_parallel=1,
         # Only keep the snapshot parameters for the last iteration
         snapshot_mode="last",
         # Specifies the seed for the experiment. If this is not provided, a random seed
         # will be used
-        seed=v["seed"],
+        seed=v['seed'],
         variant=v,
         # plot=True,
-        # terminate_machine=False,
     )
-

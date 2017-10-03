@@ -238,7 +238,7 @@ class TRPO(BatchPolopt):
 
         # Step 2: perform conjugate gradient to compute approximate
         # natural gradient
-        logger.log('Computing natural gradient using conjugate gradient algorithm')
+        logger.log('Computing natural gradient using conjugate gradient')
         # We first compute the gradient of KL term evaluate at current
         # parameter, this is used multiple times in finite difference method
         self.policy.zero_grad()
@@ -315,9 +315,6 @@ class TRPO(BatchPolopt):
 
         self.policy.set_param_values(new_parameters)
 
-
-        # TODO (ewei), where to update baseline?
-
         # logger.record_tabular('LossBefore', loss_before)
         # logger.record_tabular('LossAfter', loss_after)
         # logger.record_tabular('MeanKLBefore', mean_kl_before)
@@ -361,7 +358,7 @@ class TRPO(BatchPolopt):
 
         Returns
         -------
-        descent step ():
+        descent step (torch.Tensor):
         """
         if expected_improvement >= atol:
             if y0 is None:
