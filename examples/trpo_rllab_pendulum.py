@@ -11,7 +11,7 @@ from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 class VG(VariantGenerator):
     @variant
     def seed(self):
-        return [1, 11, 21, 31, 41]
+        return [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]
 
     @variant
     def name(self):
