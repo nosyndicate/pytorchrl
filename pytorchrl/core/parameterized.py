@@ -60,7 +60,7 @@ class Parameterized(object):
         params = self.ordered_params()
         if len(params) > 0:
             # Make the tensors flat and concatenate them
-            return torch.cat([param.grad.view(-1) for param in params])
+            return torch.cat([param.grad.data.view(-1) for param in params])
         else:
             return torch.zeros((0,))
 
@@ -78,7 +78,7 @@ class Parameterized(object):
         for param in self.ordered_params():
             corresponding_grad = new_gradient[offset:offset + param.grad.numel(
                 )].view(param.grad.size())
-            param.data.copy_(corresponding_grad)
+            param.grad.data.copy_(corresponding_grad)
             offset += param.grad.numel()
 
 

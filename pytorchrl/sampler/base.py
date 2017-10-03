@@ -90,7 +90,6 @@ class BaseSampler(Sampler):
             undiscounted_returns = [sum(path['rewards']) for path in paths]
 
             ent = np.mean(self.algo.policy.distribution(agent_infos).entropy())
-
             samples_data = dict(
                 observations=observations,
                 actions=actions,

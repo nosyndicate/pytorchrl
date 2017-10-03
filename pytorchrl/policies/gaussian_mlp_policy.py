@@ -78,9 +78,12 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
                         hidden_nonlinearity, output_nonlinearity)
                 self.log_std_model = nn.Parameter(init_std_tensor)
         else:
+            self.mean_model = self.define_single_network(sizes,
+                hidden_nonlinearity, output_nonlinearity)
             self.log_std_model = Variable(init_std_tensor)
 
         self.dist_cls = dist_cls
+
 
     def define_shared_network(self, sizes, hidden_nonlinearity,
         output_nonlinearity):
@@ -167,16 +170,19 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
                     log_stds = self.log_std_model(observations)
             else:
                 means = self.mean_model(observations)
-                log_stds = self.log_std_model
+                # Expand the log_stds
+                log_stds = self.log_std_model.expand_as(means)
         else:
-            log_stds = self.log_std_model
+            means = self.mean_model(observations)
+            # Expand the log_stds
+            log_stds = self.log_std_model.expand_as(means)
 
         # Set the minimum log_std
         if self.min_std is not None:
             min_log_std = Variable(torch.Tensor(
                 np.log([self.min_std]))).type(torch.FloatTensor)
             # max operation requires two variables
-            log_stds = torch.max(log_std, min_log_std)
+            log_stds = torch.max(log_stds, min_log_std)
 
         return means, log_stds
 
@@ -204,6 +210,7 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
         log_stds = log_stds_variable.data.numpy()
         rnd = np.random.normal(size=means.shape)
         actions = rnd * np.exp(log_stds) + means
+
         return actions, dict(mean=means, log_std=log_stds)
 
     @overrides
@@ -216,9 +223,14 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
 
     def get_policy_distribution(self, obs_var):
         """
+        Return the distribution of this policy based on observation.
+        This is different from the method 'distribution' in that, we
+        need to do a forward pass to get mean and log_stds using the
+        neural network.
+
         Parameters
         ----------
-        obs (Variable):
+        obs_var (Variable):
 
         Returns
         -------
@@ -229,8 +241,16 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
 
     def distribution(self, dist_info):
         """
-        Construct distribution using dist_info.
-        Check the type of dist_info.
+        Return the distribution of this policy based on the provided info.
+        No forward pass is needed.
+
+        Parameters
+        ----------
+        dist_info (dict):
+
+        Returns
+        -------
+        distribution (DiagonalGaussian):
         """
         means = dist_info['mean']
         log_stds = dist_info['log_std']

@@ -37,6 +37,12 @@ class Policy(nn.Module):
         """
         return False
 
+    def terminate(self):
+        """
+        Clean up operation
+        """
+        pass
+
 
 class StochasticPolicy(Policy):
 

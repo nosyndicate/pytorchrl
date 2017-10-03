@@ -58,9 +58,13 @@ class DiagonalGaussian(Distribution):
 
         # TODO (ewei), we feel this equation is not correct.
         # Mainly the first line
-        return - self.log_stds.sum() - \
-            constant(0.5) * zs.pow(2).sum() - \
+        # TODO (ewei), still need to understand what is mean of having
+        # -1 for axis in sum method
+        logli = - self.log_stds.sum(-1) - \
+            constant(0.5) * zs.pow(2).sum(-1) - \
             constant(0.5) * constant(float(self.dim)) * constant(float(np.log(2 * np.pi)))
+
+        return logli
 
     def kl_div(self, other):
         """
@@ -107,12 +111,14 @@ class DiagonalGaussian(Distribution):
         -------
         kl_div (Variable):
         """
-        # constant should wrap in Variable
+        # Constant should wrap in Variable to multiply with another Variable
+        # TODO (ewei) kl seems have problem
         variance = (constant(2.0) * self.log_stds).exp()
         other_variance = (constant(2.0) * other.log_stds).exp()
-
-        kl_div = (((self.means - other.means).pow(2) + variance - other_variance) /
-            (constant(2.0) * other_variance + constant(1e-8)) +
-            other.log_stds - self.log_stds).sum()
+        numerator = (self.means - other.means).pow(2) + \
+            variance - other_variance
+        denominator = constant(2.0) * other_variance + constant(1e-8)
+        # TODO (ewei), -1 for sum has a big impact, need to figure out why
+        kl_div = (numerator / denominator + other.log_stds - self.log_stds).sum(-1)
 
         return kl_div
