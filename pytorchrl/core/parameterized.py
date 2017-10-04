@@ -48,30 +48,19 @@ class Parameterized(object):
             param.data.copy_(corresponding_param)
             offset += param.data.numel()
 
-    def get_grad_values(self, data=True):
+    def get_grad_values(self):
         """
         Get the value of the model parameters gradient in one flat Tensor
 
-        Parameters
-        ----------
-        data (bool): To control whether we want data (torch.Tensor) or
-            symbol (Variable) of the gradient
-
         Returns
         -------
-        params (torch.Tensor or Variable): A torch Tensor (or Variable)
-            contains the gradient of parameters of the module.
+        gradients (torch.Tensor): A torch Tensor contains the gradient of
+            parameters of the module.
         """
         params = self.ordered_params()
         if len(params) > 0:
             # Make the tensors flat and concatenate them
-            if data:
-                return torch.cat([param.grad.data.view(-1) for param in params])
-            else:
-                # for param in params:
-                #     print('param.volatile is {}'.format(param.grad.volatile))
-                #     print('param.view.volatile is {}'.format(param.grad.view(-1).volatile))
-                return torch.cat([param.grad.view(-1) for param in params])
+            return torch.cat([param.grad.data.view(-1) for param in params])
         else:
             return torch.zeros((0,))
 
@@ -91,5 +80,7 @@ class Parameterized(object):
                 )].view(param.grad.size())
             param.grad.data.copy_(corresponding_grad)
             offset += param.grad.numel()
+
+
 
 
