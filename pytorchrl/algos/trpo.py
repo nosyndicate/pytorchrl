@@ -147,21 +147,39 @@ def pearlmutter_hvp(kl_func, all_obs, old_dist, policy, v, damping=1e-8):
     kl_div = kl_func(policy, all_obs, old_dist)
     param_grads = torch.autograd.grad(kl_div, policy.ordered_params(), create_graph=True)
     flat_grad = torch.cat([grad.view(1, -1) for grad in param_grads], 1)
+    # other_flat_grad = torch.cat([grad.view(-1) for grad in param_grads])
+    # print('flat_grad is {}'.format(flat_grad))
+    # print('other_flat_grad is {}'.format(other_flat_grad))
+    # print('vector v is {}'.format(v))
     gradient_vector_product = torch.sum(flat_grad * Variable(v))
     # print(flat_grad)
     # print(gradient_vector_product)
     hvp = torch.autograd.grad(gradient_vector_product, policy.ordered_params())
     # print(hvp)
     flat_hvp = torch.cat([element.contiguous().view(-1) for element in hvp])
+    return flat_hvp.data + v * damping
     # kl_div.backward(create_graph=True)
     # grad_var = policy.get_grad_values(data=False)
     # gradient_vector_product = torch.sum(grad_var * Variable(v))
     # ones = torch.ones(grad_var.size())
     # gradient_vector_product.backward(create_graph=True)
-    # # Since the gradient are accumulating, we need to subtract the
-    # # gradient got before
+    # Since the gradient are accumulating, we need to subtract the
+    # gradient got before
     # hvp = (policy.get_grad_values(data=False) - grad_var).data
-    return flat_hvp.data
+    # return (flat_hvp - other_flat_grad).
+    # kl_div.backward(create_graph=True)
+    # gradient = policy.get_grad_values(data=False)
+    # print('gradient.volatile is {}'.format(gradient.volatile))
+    # gradient.volatile = False
+    # print('gradient.volatile is {}'.format(gradient.volatile))
+    # print('Variable(v).volatile is {}'.format(Variable(v).volatile))
+    # gradient_vector_product = torch.sum(gradient * Variable(v))
+    # print('gradient_vector_product.volatile is {}'.format(gradient_vector_product.volatile))
+    # gradient_vector_product.backward()
+    # import sys
+    # sys.exit(0)
+
+
 
 def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
     """
@@ -328,9 +346,14 @@ class TRPO(BatchPolopt):
                     return finite_diff_hvp(kl_divergence, obs_var, old_dist_var,
                         self.policy, flat_kl_grad, vector, symmetric=False)
             else:
-                print('use pearlmutter_hvp')
-                return pearlmutter_hvp(kl_divergence, obs_var, old_dist_var,
+                # print('use pearlmutter_hvp')
+                # fdhvp = finite_diff_hvp(kl_divergence, obs_var, old_dist_var,
+                #         self.policy, None, vector, symmetric=True)
+                phvp = pearlmutter_hvp(kl_divergence, obs_var, old_dist_var,
                     self.policy, vector)
+                # print('fdhvp is {}'.format(fdhvp))
+                # print('phvp is {}'.format(phvp))
+                return phvp
 
         descent_step = cg(Fx, flat_grad)
 

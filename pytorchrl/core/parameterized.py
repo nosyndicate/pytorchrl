@@ -68,6 +68,9 @@ class Parameterized(object):
             if data:
                 return torch.cat([param.grad.data.view(-1) for param in params])
             else:
+                # for param in params:
+                #     print('param.volatile is {}'.format(param.grad.volatile))
+                #     print('param.view.volatile is {}'.format(param.grad.view(-1).volatile))
                 return torch.cat([param.grad.view(-1) for param in params])
         else:
             return torch.zeros((0,))
