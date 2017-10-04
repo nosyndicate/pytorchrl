@@ -131,6 +131,14 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
     def define_single_network(self, sizes, hidden_nonlinearity,
         output_nonlinearity):
         """
+        Define a single input - single output network (thus, no shared
+        part).
+
+        Parameters
+        ----------
+        sizes (list):
+        hidden_nonlinearity ():
+        output_nonlinearity ():
         """
         submodules = []
         for index, size in enumerate(sizes):

@@ -56,12 +56,12 @@ def kl_divergence(policy, all_obs, old_dist):
     return kl_div
 
 
-def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v, eps=1e-5, damping=1e-8):
+def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v,
+    eps=1e-5, damping=1e-8, symmetric=True):
     """
     This is finite difference method for computing the Hessian vector product (Hv),
     where H is the hessian and v is the vector.
     (See section 2 of "Fast Exact Multiplication by the Hessian")
-    TODO (ewei) Should also implement the default method
 
     Approximately compute the Fisher-vector product of the provided policy,
     F(x)v, where x is the current policy parameter
@@ -77,7 +77,14 @@ def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v, eps=1e-5, dam
     So
     F(x)v ≈ (g(x + \epsilon v) - g(x)) / \epsilon
     Since x is always the current parameters, we cache the computation of g(x)
-    and this is provided as an input, grad0
+    and this is provided as an input, grad_x
+
+    According to this post comment by by Barak Pearlmutter
+    https://justindomke.wordpress.com/2009/01/17/hessian-vector-products/
+    F(x)v ≈ (g(x + \epsilon v) - g(x - \epsilon v)) / (2 * \epsilon)
+    is a better approximation, as this expression will be closer to the
+    true value for larger \epsilon. Thus, we treat this symmetric evaluation
+    as default setting.
 
     Parameters
     ----------
@@ -91,7 +98,8 @@ def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v, eps=1e-5, dam
     eps (float): A small perturbation for finite difference computation.
     damping (float): A small damping factor to ensure that the Fisher
         information matrix is positive definite.
-
+    symmetric (bool): A flag to indicate if we want to use symmetric
+        finite differece estimation
     Returns
     -------
     hvp (torch.Tensor): The hessian vector product
@@ -105,17 +113,55 @@ def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v, eps=1e-5, dam
     # gradient of kl_divergence evaluated at (x + \epsilon v)
     grad_plus = policy.get_grad_values()
 
+    # Compute the finite difference
+    if symmetric:
+        # Compute g(x + \epsilon v)
+        policy.set_param_values(flat_params - eps * v)
+        policy.zero_grad()
+        kl_div = kl_func(policy, all_obs, old_dist)
+        kl_div.backward()
+        # gradient of kl_divergence evaluated at (x - \epsilon v)
+        grad_minus = policy.get_grad_values()
+        hvp = (grad_plus - grad_minus) / (2 * eps) + damping * flat_params
+    else:
+        hvp = (grad_plus - grad_x) / (eps) + damping * flat_params
+
     # Restore the policy parameters
     policy.set_param_values(flat_params)
-
-    # Compute the finite difference
-    # TODO (ewei), need to implement another one, this is not the
-    # best finite difference method
-    hvp = (grad_plus - grad_x) / (eps) + damping * flat_params
     return hvp
 
-def pearlmutter_hvp():
-    pass
+
+def pearlmutter_hvp(kl_func, all_obs, old_dist, policy, v, damping=1e-8):
+    """
+    TODO (ewei) add docstring here.
+
+    Parameters
+    ----------
+    see docstring of finite_diff_hvp function.
+
+    Returns
+    -------
+    see docstring of finite_diff_hvp function.
+    """
+    policy.zero_grad()
+    kl_div = kl_func(policy, all_obs, old_dist)
+    param_grads = torch.autograd.grad(kl_div, policy.ordered_params(), create_graph=True)
+    flat_grad = torch.cat([grad.view(1, -1) for grad in param_grads], 1)
+    gradient_vector_product = torch.sum(flat_grad * Variable(v))
+    # print(flat_grad)
+    # print(gradient_vector_product)
+    hvp = torch.autograd.grad(gradient_vector_product, policy.ordered_params())
+    # print(hvp)
+    flat_hvp = torch.cat([element.contiguous().view(-1) for element in hvp])
+    # kl_div.backward(create_graph=True)
+    # grad_var = policy.get_grad_values(data=False)
+    # gradient_vector_product = torch.sum(grad_var * Variable(v))
+    # ones = torch.ones(grad_var.size())
+    # gradient_vector_product.backward(create_graph=True)
+    # # Since the gradient are accumulating, we need to subtract the
+    # # gradient got before
+    # hvp = (policy.get_grad_values(data=False) - grad_var).data
+    return flat_hvp.data
 
 def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
     """
@@ -172,6 +218,7 @@ def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
             break
     return x
 
+
 class TRPO(BatchPolopt):
     """
     Trust region policy optimization.
@@ -184,14 +231,30 @@ class TRPO(BatchPolopt):
         self,
         step_size=0.01,
         use_line_search=True,
-        hessian_free_method='finite',
+        use_finite_diff_hvp=False,
+        symmetric_finite_diff=True,
         **kwargs
     ):
+        """
+        Trust region policy optimization method.
 
+        Parameters
+        ----------
+        step_size (float): This is the constraint on the kl-divergence,
+            that is D_KL(old||new) <= step_size
+        use_line_search (bool): This controls whether we want to perform
+            a line search after we find out the descent direction. It not,
+            TRPO become Truncated Natural Policy Gradient algorithm.
+        use_finite_diff_hvp (bool): Controls whether to use finite difference
+            method or Pearlmutter's method to acquire hessian-vector product.
+        symmetric_finite_diff (bool): Control whether to use symmetric
+            finite difference method to compute hessian-vector product.
+        """
         super(TRPO, self).__init__(**kwargs)
         self.step_size = step_size
         self.use_line_search = use_line_search
-        self.hessian_free_method = hessian_free_method
+        self.use_finite_diff_hvp = use_finite_diff_hvp
+        self.symmetric_finite_diff = symmetric_finite_diff
 
     @overrides
     def optimize_policy(self, itr, samples_data):
@@ -204,6 +267,15 @@ class TRPO(BatchPolopt):
         and F is the hessian of KL-divergence
 
         solution is \theta - \theta_old = 1/C * F^{-1} * g
+
+        Parameters
+        ----------
+        itr ():
+        samples_data ():
+
+        Returns
+        -------
+        info ():
         """
 
         # TODO (ewei), rllab code use agent_info to store the dict return
@@ -228,7 +300,6 @@ class TRPO(BatchPolopt):
             for k, v in old_dist.items()
         }
 
-
         # Step 1: compute gradient g in Euclidean space
         self.policy.zero_grad()
         surr_loss = surrogate_loss(self.policy, obs_var, action_var, adv_var, old_dist_var)
@@ -239,17 +310,27 @@ class TRPO(BatchPolopt):
         # Step 2: perform conjugate gradient to compute approximate
         # natural gradient
         logger.log('Computing natural gradient using conjugate gradient')
-        # We first compute the gradient of KL term evaluate at current
-        # parameter, this is used multiple times in finite difference method
-        self.policy.zero_grad()
-        kl_div = kl_divergence(self.policy, obs_var, old_dist_var)
-        kl_div.backward()
-        flat_kl_grad = self.policy.get_grad_values()
+
+        if self.use_finite_diff_hvp and self.symmetric_finite_diff:
+            # We first compute the gradient of KL term evaluate at current
+            # parameter, this is used multiple times in finite difference method
+            self.policy.zero_grad()
+            kl_div = kl_divergence(self.policy, obs_var, old_dist_var)
+            kl_div.backward()
+            flat_kl_grad = self.policy.get_grad_values()
 
         def Fx(vector):
-            return finite_diff_hvp(kl_divergence, obs_var, old_dist_var,
-                self.policy, flat_kl_grad, vector)
-
+            if self.use_finite_diff_hvp:
+                if self.symmetric_finite_diff:
+                    return finite_diff_hvp(kl_divergence, obs_var, old_dist_var,
+                        self.policy, None, vector, symmetric=True)
+                else:
+                    return finite_diff_hvp(kl_divergence, obs_var, old_dist_var,
+                        self.policy, flat_kl_grad, vector, symmetric=False)
+            else:
+                print('use pearlmutter_hvp')
+                return pearlmutter_hvp(kl_divergence, obs_var, old_dist_var,
+                    self.policy, vector)
 
         descent_step = cg(Fx, flat_grad)
 
@@ -280,30 +361,26 @@ class TRPO(BatchPolopt):
         if self.use_line_search:
             logger.log('Performing line search')
             expected_improvement = flat_grad.dot(tight_descent_step)
-            # print('expected_improvement is {}'.format(expected_improvement))
+
             def barrier_func(x):
                 """
                 barrier function to perform search on
 
                 Parameters
                 ----------
-                x (torch.Tensor):
+                x (torch.Tensor): The parameter of the policy
 
                 Returns
                 -------
-                f(x) (float):
+                f(x) (float): The loss function evaluated given x
                 """
                 self.policy.set_param_values(x)
                 # This full inference mode, we do not need gradient
                 obs_var.volatile = True
                 surr_loss = surrogate_loss(self.policy, obs_var, action_var, adv_var, old_dist_var)
                 kl_div = kl_divergence(self.policy, obs_var, old_dist_var)
-                # print('kl_div is {}'.format(kl_div))
-                # print('surr_loss is {}'.format(surr_loss))
                 constraint_part = max(kl_div.data[0] - self.step_size, 0.0)
-                # print('constraint_part is {}'.format(constraint_part))
                 result = surr_loss.data[0] + 1e100 * constraint_part
-                # print('result is {}'.format(result))
                 return result
 
             new_parameters = self.line_search(barrier_func,
@@ -331,10 +408,8 @@ class TRPO(BatchPolopt):
             env=self.env,
         )
 
-
     def line_search(self, f, x0, dx, expected_improvement, y0=None,
-        backtrack_ratio=0.8, max_backtracks=15, accept_ratio=0.1,
-        atol=1e-7):
+        backtrack_ratio=0.8, max_backtracks=15, accept_ratio=0.1, atol=1e-7):
         """
         Perform line search on the function f at x.
 
@@ -346,8 +421,8 @@ class TRPO(BatchPolopt):
         dx (torch.Tensor): The full descent direction. We shrink along this direction.
         expected_improvement (float): Expected amount of improvement when taking the
             full descent direction, typically computed by
-            y0 - y ≈ (f_x|x=x0).dot(dx), where f_x|x=x0 is the gradient
-            of f w.r.t. x, evaluated at x0.
+            y0 - y ≈ (f_x|x=x0).dot(dx),
+            where f_x|x=x0 is the gradient of f w.r.t. x, evaluated at x0.
         y0 (float): The initial value of f at x
         backtrack_ratio (float): Ratio to shrink the descent direction per line
             search step
@@ -367,8 +442,7 @@ class TRPO(BatchPolopt):
                 x = x0 - ratio * dx
                 y = f(x)
                 actual_improvement = y0 - y
-                # print('actual_improvement is {}'.format(actual_improvement))
-                if actual_improvement / (expected_improvement * ratio) >=  accept_ratio:
+                if actual_improvement / (expected_improvement * ratio) >= accept_ratio:
                     logger.log('ExpectedImprovement: {}'.format(expected_improvement * ratio))
                     logger.log('ActualImprovement: {}'.format(actual_improvement))
                     logger.log('ImprovementRatio: {}'.format(actual_improvement /

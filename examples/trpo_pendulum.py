@@ -18,7 +18,7 @@ class VG(VariantGenerator):
 
     @variant
     def name(self):
-        return ['pytorch']
+        return ['pytorch-pearlmutter']
 
 def run_task(*_):
     env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
@@ -48,12 +48,15 @@ def run_task(*_):
     )
     algo.train()
 
+# if __name__ == '__main__':
+#     run_task()
+
 variants = VG().variants()
 
 for v in variants:
     run_experiment_lite(
         run_task,
-        exp_prefix="trpo_pendulum",
+        exp_prefix="trpo_pendulum_pearlmutter",
         # Number of parallel workers for sampling
         n_parallel=1,
         # Only keep the snapshot parameters for the last iteration
