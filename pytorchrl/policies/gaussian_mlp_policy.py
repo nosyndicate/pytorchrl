@@ -25,10 +25,10 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
         init_std=1.0,
         std_share_network=False,
         std_hidden_size=(32, 32),
-        min_std=1e-6, #TODO (ewei), need to use this
-        hidden_nonlinearity=nn.ReLU,
+        min_std=1e-6,
+        hidden_nonlinearity=nn.Tanh,
         std_hidden_nonlinearity=nn.Tanh,
-        output_nonlinearity=nn.Tanh,
+        output_nonlinearity=None,
         dist_cls=DiagonalGaussian,
     ):
         """
