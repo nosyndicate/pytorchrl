@@ -5,6 +5,14 @@ from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite
 from rllab.policies.categorical_mlp_policy import CategoricalMLPPolicy
 
+class VG(VariantGenerator):
+    @variant
+    def seed(self):
+        return [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]
+
+    @variant
+    def name(self):
+        return ['pytorch-finite']
 
 def run_task(*_):
     # Please note that different environments with different action spaces may
@@ -30,20 +38,25 @@ def run_task(*_):
         n_itr=50,
         discount=0.99,
         step_size=0.01,
+        optimizer=ConjugateGradientOptimizer(hvp_approach=FiniteDifferenceHvp(base_eps=1e-5, symmetric=False))
         # Uncomment both lines (this and the plot parameter below) to enable plotting
         # plot=True,
     )
     algo.train()
 
+variants = VG().variants()
 
-run_experiment_lite(
-    run_task,
-    # Number of parallel workers for sampling
-    n_parallel=1,
-    # Only keep the snapshot parameters for the last iteration
-    snapshot_mode="last",
-    # Specifies the seed for the experiment. If this is not provided, a random seed
-    # will be used
-    seed=1,
-    # plot=True,
-)
+for v in variants:
+    run_experiment_lite(
+        run_task,
+        exp_prefix='trpo_cartpole_comparison',
+        # Number of parallel workers for sampling
+        n_parallel=1,
+        # Only keep the snapshot parameters for the last iteration
+        snapshot_mode="last",
+        # Specifies the seed for the experiment. If this is not provided, a random seed
+        # will be used
+        seed=v['seed'],
+        variant=v,
+        # plot=True,
+    )
