@@ -1,5 +1,6 @@
 from rllab.algos.trpo import TRPO
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
+from rllab.optimizers.conjugate_gradient_optimizer import ConjugateGradientOptimizer, FiniteDifferenceHvp
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite, VariantGenerator, variant
