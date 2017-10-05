@@ -10,7 +10,6 @@ from pytorchrl.distributions.diagonal_gaussian import DiagonalGaussian
 from pytorchrl.policies.base import StochasticPolicy
 
 
-
 class GaussianMLPPolicy(StochasticPolicy, Parameterized):
     """
     Stochastic policy as Gaussian distribution.
@@ -194,6 +193,7 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
 
         return means, log_stds
 
+    @overrides
     def get_action(self, observation):
         """
         Get observation and return the action for the observation.

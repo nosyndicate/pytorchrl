@@ -49,6 +49,10 @@ class DiagonalGaussian(Distribution):
         Parameters
         ----------
         a (Variable):
+
+        Returns
+        -------
+        logli (Variable)
         """
         # First cast into float tensor
         a = a.type(torch.FloatTensor)
@@ -56,10 +60,10 @@ class DiagonalGaussian(Distribution):
         # Convert into a sample of standard normal
         zs = (a - self.means) / (self.log_stds.exp())
 
-        # TODO (ewei), we feel this equation is not correct.
+        # TODO (ewei), I feel this equation is not correct.
         # Mainly the first line
-        # TODO (ewei), still need to understand what is mean of having
-        # -1 for axis in sum method
+        # TODO (ewei), still need to understand what is meaning of having
+        # -1 for axis in sum method, (same for numpy)
         logli = - self.log_stds.sum(-1) - \
             constant(0.5) * zs.pow(2).sum(-1) - \
             constant(0.5) * constant(float(self.dim)) * constant(float(np.log(2 * np.pi)))
