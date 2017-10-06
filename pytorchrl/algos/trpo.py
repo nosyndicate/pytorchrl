@@ -28,7 +28,15 @@ def surrogate_loss(policy, all_obs, all_actions, all_adv, old_dist):
     surr_loss (Variable): The surrogate loss function wrapped in
         Variable
     """
+    # print('in surrogate_loss')
     new_dist = policy.get_policy_distribution(all_obs)
+    # print(all_obs.volatile)
+    # print(new_dist.prob)
+    # new_dist.prob.backward(torch.ones(new_dist.prob.size()), create_graph=True)
+    # for param in policy.parameters():
+    #     print(param.grad.volatile)
+    # import sys
+    # sys.exit(0)
     old_dist = policy.distribution(old_dist)
 
     ratio = new_dist.likelihood_ratio(old_dist, all_actions)
@@ -53,7 +61,15 @@ def kl_divergence(policy, all_obs, old_dist):
     kl_div (Variable): The KL-divergence between the old distribution
         and new distribution.
     """
+    # print('in kl_div')
     new_dist = policy.get_policy_distribution(all_obs)
+    # print(all_obs.volatile)
+    # print(new_dist.prob)
+    # new_dist.prob.backward(torch.ones(new_dist.prob.size()), create_graph=True)
+    # for param in policy.parameters():
+    #     print(param.grad.volatile)
+    # import sys
+    # sys.exit(0)
     old_dist = policy.distribution(old_dist)
 
     kl_div = old_dist.kl_div(new_dist).mean()
@@ -108,6 +124,8 @@ def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v,
     hvp (torch.Tensor): The hessian vector product
     """
     flat_params = policy.get_param_values()
+    kl_div = kl_func(policy, all_obs, old_dist)
+    # print('in finite, kl_div is {}'.format(kl_div))
     # Compute g(x + \epsilon v)
     policy.set_param_values(flat_params + eps * v)
     policy.zero_grad()
@@ -130,6 +148,7 @@ def finite_diff_hvp(kl_func, all_obs, old_dist, policy, grad_x, v,
         hvp = (grad_plus - grad_x) / (eps)
 
     # Restore the policy parameters
+    # print('in finite diff, parameter is {}'.format(flat_params))
     policy.set_param_values(flat_params)
     return hvp
 
@@ -148,14 +167,32 @@ def pearlmutter_hvp(kl_func, all_obs, old_dist, policy, v):
     """
     policy.zero_grad()
     kl_div = kl_func(policy, all_obs, old_dist)
+    # print('in pearlmutter, kl_div is {}'.format(kl_div))
     param_grads = torch.autograd.grad(kl_div, policy.ordered_params(),
         create_graph=True)
+    # print('first trial, grad now is {}'.format(policy.get_grad_values()))
     flat_grad = torch.cat([grad.view(-1) for grad in param_grads])
     gradient_vector_product = torch.sum(flat_grad * Variable(v))
-    hessian_vector_product = torch.autograd.grad(gradient_vector_product,
-        policy.ordered_params())
-    flat_hvp = torch.cat([product.contiguous().view(-1) for product in hessian_vector_product])
+    # hessian_vector_product = torch.autograd.grad(gradient_vector_product,
+    #     policy.ordered_params(), create_graph=True)
+    gradient_vector_product.backward()
+    # print('second trial, grad now is {}'.format(policy.get_grad_values()))
+    # flat_hvp = torch.cat([product.contiguous().view(-1) for product in hessian_vector_product])
+    flat_hvp = torch.cat([param.grad.contiguous().view(-1) for param in policy.ordered_params()])
     return flat_hvp.data
+
+
+def pearlmutter(kl_func, all_obs, old_dist, policy, v):
+    policy.zero_grad()
+    kl_div = kl_func(policy, all_obs, old_dist)
+    kl_div.backward(create_graph=True)
+    # for param in policy.ordered_params():
+    #     print(param.grad.volatile)
+    flat_grad = torch.cat([param.grad.view(-1) for param in policy.ordered_params()])
+    gradient_vector_product = torch.sum(flat_grad * Variable(v))
+    gradient_vector_product.backward()
+    new_flat_grad = torch.cat([param.grad.view(-1) for param in policy.ordered_params()])
+    return new_flat_grad.data - flat_grad.data
 
 
 def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
@@ -201,6 +238,7 @@ def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
     rdotr = r.dot(r)
 
     for i in range(cg_iters):
+        # print('in cg loop {}'.format(i))
         z = f_Ax(p)
         v = rdotr / p.dot(z)
         x += v * p
@@ -301,16 +339,26 @@ class TRPO(BatchPolopt):
             for k, v in old_dist.items()
         }
 
+
         # Step 1: compute gradient g in Euclidean space
         self.policy.zero_grad()
         surr_loss = surrogate_loss(self.policy, obs_var, action_var, adv_var, old_dist_var)
-        surr_loss.backward()
+        # Set the create_graph flag here seems very important if we want to
+        # get higher order gradient of kl_div, although we are not getting
+        # the higher order gradient for surr_loss
+        surr_loss.backward(create_graph=False)
+
+        # print('test')
+        # kl_divergence(self.policy, obs_var, old_dist_var)
+
+
         # Obtain the flattened gradient vector
         flat_grad = self.policy.get_grad_values()
 
         # Step 2: perform conjugate gradient to compute approximate
         # natural gradient
         logger.log('Computing natural gradient using conjugate gradient')
+
 
         flat_kl_grad = None
         if self.use_finite_diff_hvp and not self.symmetric_finite_diff:
@@ -322,6 +370,9 @@ class TRPO(BatchPolopt):
             kl_div.backward()
             flat_kl_grad = self.policy.get_grad_values()
 
+
+
+
         def Fx(vector):
             if self.use_finite_diff_hvp:
                 hvp = finite_diff_hvp(kl_divergence, obs_var,
@@ -329,12 +380,22 @@ class TRPO(BatchPolopt):
                     eps=self.finite_diff_hvp_epsilon,
                     symmetric=self.symmetric_finite_diff)
             else:
-                hvp = pearlmutter_hvp(kl_divergence, obs_var,
+                # finite_hvp = finite_diff_hvp(kl_divergence, obs_var,
+                #     old_dist_var, self.policy, flat_kl_grad, vector,
+                #     eps=self.finite_diff_hvp_epsilon,
+                #     symmetric=True)
+                # print('finite_diff_hvp is {}'.format(finite_hvp))
+                hvp = pearlmutter(kl_divergence, obs_var,
                     old_dist_var, self.policy, vector)
+                # hvp = pearlmutter_hvp(kl_divergence, obs_var,
+                #     old_dist_var, self.policy, vector)
+                # print('hvp is {}'.format(hvp))
 
             return hvp + self.damping * vector
 
         descent_step = cg(Fx, flat_grad)
+        # import sys
+        # sys.exit(0)
 
         # Step 3: Compute initial step size
         # We'd like D_KL(old||new) <= step_size
