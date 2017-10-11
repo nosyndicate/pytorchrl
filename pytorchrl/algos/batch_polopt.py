@@ -1,8 +1,10 @@
 from rllab.algos.base import RLAlgorithm
 import rllab.misc.logger as logger
+import rllab.plotter as plotter
 
 from pytorchrl.sampler.base import BaseSampler
 from pytorchrl.sampler import parallel_sampler
+
 
 
 class BatchSampler(BaseSampler):
@@ -105,8 +107,8 @@ class BatchPolopt(RLAlgorithm):
 
     def start_worker(self):
         self.sampler.start_worker()
-        if self.plot:
-            plotter.init_plot(self.env, self.policy)
+        # if self.plot:
+        #     plotter.init_plot(self.env, self.policy)
 
     def shutdown_worker(self):
         self.sampler.shutdown_worker()
