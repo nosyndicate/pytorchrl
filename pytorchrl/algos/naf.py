@@ -4,7 +4,8 @@ import numpy as np
 import pyprind
 
 from rllab.algos.base import RLAlgorithm
-from rllab.algos.ddpg import SimpleReplayPoolfrom rllab.misc import special
+from rllab.algos.ddpg import SimpleReplayPool
+from rllab.misc import special
 from rllab.misc import ext
 import rllab.misc.logger as logger
 
