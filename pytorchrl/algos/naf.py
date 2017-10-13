@@ -17,7 +17,8 @@ from torch import optim
 from pytorchrl.sampler import parallel_sampler
 from pytorchrl.sampler.utils import rollout
 
-class NAF(RLAlgorithm)
+
+class NAF(RLAlgorithm):
     """
     Normalized Advantage Function.
     """
@@ -86,7 +87,7 @@ class NAF(RLAlgorithm)
         self.scale_reward = scale_reward
 
     def start_worker(self):
-        parallel_sampler.populate_task(self.env, self.policy)
+        parallel_sampler.populate_task(self.env, self.qf)
 
     def train(self):
         pool = SimpleReplayPool(
@@ -292,10 +293,6 @@ class NAF(RLAlgorithm)
         self.q_averages = []
         self.y_averages = []
         self.es_path_returns = []
-
-    def update_plot(self):
-        if self.plot:
-            plotter.update_plot(self.qf, self.max_path_length)
 
     def get_epoch_snapshot(self, epoch):
         return dict(
