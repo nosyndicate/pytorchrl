@@ -4,12 +4,10 @@ import gym
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
-from rllab.misc.instrument import run_experiment_lite
-from rllab.misc.instrument import VariantGenerator, variant
 
 from pytorchrl.algos.trpo import TRPO
 from pytorchrl.policies.gaussian_mlp_policy import GaussianMLPPolicy
-
+from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant
 
 class VG(VariantGenerator):
     @variant
