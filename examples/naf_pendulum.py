@@ -3,12 +3,11 @@ import gym
 
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
-from rllab.misc.instrument import run_experiment_lite
-from rllab.misc.instrument import VariantGenerator, variant
 
 from pytorchrl.algos.naf import NAF
 from pytorchrl.exploration_strategies.ou_strategy import OUStrategy
 from pytorchrl.q_functions.normalized_adv_function import NormalizedAdvantageFunction
+from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant
 
 
 class VG(VariantGenerator):
@@ -53,24 +52,24 @@ def run_task(*_):
     )
     algo.train()
 
-if __name__ == '__main__':
-    run_task()
+# if __name__ == '__main__':
+#     run_task()
 
-# variants = VG().variants()
+variants = VG().variants()
 
-# for v in variants:
-#     run_experiment_lite(
-#         run_task,
-#         exp_prefix="ddpg_pendulum_test",
-#         # Number of parallel workers for sampling
-#         n_parallel=1,
-#         # Only keep the snapshot parameters for the last iteration
-#         snapshot_mode="last",
-#         # Specifies the seed for the experiment. If this is not provided, a random seed
-#         # will be used
-#         seed=v["seed"],
-#         variant=v,
-#         # plot=True,
-#         # terminate_machine=False,
-#     )
+for v in variants:
+    run_experiment_lite(
+        run_task,
+        exp_prefix="ddpg_pendulum_test",
+        # Number of parallel workers for sampling
+        n_parallel=1,
+        # Only keep the snapshot parameters for the last iteration
+        snapshot_mode="last",
+        # Specifies the seed for the experiment. If this is not provided, a random seed
+        # will be used
+        seed=v["seed"],
+        variant=v,
+        # plot=True,
+        # terminate_machine=False,
+    )
 
