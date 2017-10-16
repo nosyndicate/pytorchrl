@@ -772,6 +772,8 @@ def launch_ec2(params_list, exp_prefix, docker_image, code_full_path,
     sio.write("""
         die() { status=$1; shift; echo "FATAL: $*"; exit $status; }
     """)
+    # get the meta data about the instance 
+    #http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
     sio.write("""
         EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
     """)
