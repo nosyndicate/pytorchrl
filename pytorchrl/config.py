@@ -33,9 +33,9 @@ AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", None)
 
 AWS_ACCESS_SECRET = os.environ.get("AWS_ACCESS_SECRET", None)
 
-AWS_IAM_INSTANCE_PROFILE_NAME = "rllab"
+AWS_IAM_INSTANCE_PROFILE_NAME = "pytorchrl"
 
-AWS_SECURITY_GROUPS = ["rllab"]
+AWS_SECURITY_GROUPS = ["pytorchrl"]
 
 AWS_SECURITY_GROUP_IDS = []
 
@@ -47,7 +47,7 @@ AWS_REGION_NAME = "us-east-1"
 
 CODE_SYNC_IGNORES = ["*.git/*", "*data/*", "*.pod/*"]
 
-DOCKER_CODE_DIR = "/root/code/rllab"
+DOCKER_CODE_DIR = "/root/code/pytorchrl"
 
 AWS_CODE_SYNC_S3_PATH = "s3://to/be/overriden/in/personal"
 

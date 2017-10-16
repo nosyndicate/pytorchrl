@@ -21,11 +21,11 @@ AWS_SPOT = True
 
 AWS_SPOT_PRICE = '10.0'
 
-AWS_IAM_INSTANCE_PROFILE_NAME = "rllab"
+AWS_IAM_INSTANCE_PROFILE_NAME = "pytorchrl"
 
-AWS_SECURITY_GROUPS = ["rllab"]
+AWS_SECURITY_GROUPS = ["pytorchrl"]
 
-AWS_REGION_NAME = "us-west-2"
+AWS_REGION_NAME = "us-east-2"
 
 AWS_CODE_SYNC_S3_PATH = "<insert aws s3 bucket url for code>e"
 
@@ -38,7 +38,7 @@ AWS_S3_PATH = "<insert aws s3 bucket url>"
 
 LABEL = "template"
 
-DOCKER_CODE_DIR = "/root/code/rllab"
+DOCKER_CODE_DIR = "/root/code/pytorchrl"
 
 AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", "<insert aws key>")
 
