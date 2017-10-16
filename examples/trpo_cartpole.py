@@ -50,22 +50,22 @@ def run_task(*_):
     )
     algo.train()
 
-# if __name__ == '__main__':
-#     run_task()
+if __name__ == '__main__':
+    run_task()
 
-variants = VG().variants()
+# variants = VG().variants()
 
-for v in variants:
-    run_experiment_lite(
-        run_task,
-        exp_prefix='trpo_cartpole_comparison',
-        # Number of parallel workers for sampling
-        n_parallel=1,
-        # Only keep the snapshot parameters for the last iteration
-        snapshot_mode="last",
-        # Specifies the seed for the experiment. If this is not provided, a random seed
-        # will be used
-        seed=v['seed'],
-        variant=v,
-        # plot=True,
-    )
+# for v in variants:
+#     run_experiment_lite(
+#         run_task,
+#         exp_prefix='trpo_cartpole_comparison',
+#         # Number of parallel workers for sampling
+#         n_parallel=1,
+#         # Only keep the snapshot parameters for the last iteration
+#         snapshot_mode="last",
+#         # Specifies the seed for the experiment. If this is not provided, a random seed
+#         # will be used
+#         seed=v['seed'],
+#         variant=v,
+#         # plot=True,
+#     )
