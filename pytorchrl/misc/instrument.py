@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 import subprocess
@@ -8,13 +9,7 @@ import inspect
 import hashlib
 import sys
 from contextlib import contextmanager
-
 import errno
-
-from rllab.core.serializable import Serializable
-from rllab import config
-from rllab.misc.console import mkdir_p
-from rllab.misc import ext
 from io import StringIO
 import datetime
 import dateutil.tz
@@ -22,9 +17,13 @@ import json
 import time
 import numpy as np
 
+from rllab.misc import ext
 from rllab.misc.ext import AttrDict
 from rllab.viskit.core import flatten
-import collections
+from rllab.core.serializable import Serializable
+from rllab.misc.console import mkdir_p
+
+from pytorchrl import config
 
 
 class StubBase(object):
