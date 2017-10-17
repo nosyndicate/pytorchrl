@@ -12,7 +12,7 @@ from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, var
 class VG(VariantGenerator):
     @variant
     def seed(self):
-        return [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]
+        return [1]
 
     @variant
     def name(self):
@@ -63,6 +63,8 @@ for v in variants:
         # will be used
         seed=v["seed"],
         variant=v,
+        # mode='ec2',
+        # dry=True,
         # plot=True,
         # terminate_machine=False,
     )
