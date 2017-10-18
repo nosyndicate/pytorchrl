@@ -64,7 +64,7 @@ for v in variants:
         seed=v['seed'],
         variant=v,
         mode='ec2',
-        dry=True,
+        # dry=True,
         # plot=True,
         # terminate_machine=False,
     )

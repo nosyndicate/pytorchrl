@@ -12,6 +12,7 @@ from pytorchrl import config
 ACCESS_KEY = os.environ['AWS_ACCESS_KEY']
 ACCESS_SECRET = os.environ['AWS_ACCESS_SECRET']
 S3_BUCKET_NAME = os.environ['PYTORCHRL_S3_BUCKET']
+S3_BUCKET_REGION = os.environ['BUCKET_REGION']
 
 ALL_REGION_AWS_SECURITY_GROUP_IDS = {}
 ALL_REGION_AWS_KEY_NAMES = {}
@@ -27,7 +28,7 @@ AWS_REGION_NAME = 'us-east-2'
 if USE_GPU:
     DOCKER_IMAGE = 'dementrock/rllab3-shared-gpu'
 else:
-    DOCKER_IMAGE = 'dementrock/dwicke/jump:docker'
+    DOCKER_IMAGE = 'dwicke/jump:docker'
 
 DOCKER_LOG_DIR = '/tmp/expt'
 
@@ -133,7 +134,7 @@ def setup_iam():
         existing_role.load()
         # If role exists, delete and recreate
         if not query_yes_no(
-                'There is an existing role named pytorchrl. Proceed to delete everything rllab-related and recreate?',
+                'There is an existing role named pytorchrl. Proceed to delete everything pytorchrl-related and recreate?',
                 default='no'):
             sys.exit()
 
@@ -230,11 +231,15 @@ def setup_s3():
         's3',
         aws_access_key_id=ACCESS_KEY,
         aws_secret_access_key=ACCESS_SECRET,
+        region_name=S3_BUCKET_REGION,
     )
     try:
         s3_client.create_bucket(
             ACL='private',
             Bucket=S3_BUCKET_NAME,
+            CreateBucketConfiguration={
+                'LocationConstraint': 'us-east-2'
+            },
         )
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'BucketAlreadyExists':
