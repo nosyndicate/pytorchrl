@@ -39,7 +39,7 @@ WORKDIR /root/code/pytorchrl/
 RUN conda create -y -n pytorchrl
 ENV PYTHONPATH /root/code/pytorchrl:$PYTHONPATH
 
-#ENV PATH /opt/conda/envs/pytorchrl/bin:$PATH
+ENV PATH /opt/conda/envs/pytorchrl/bin:$PATH
 
 
 RUN echo "source activate pytorchrl" >> /root/.bashrc
@@ -49,3 +49,4 @@ WORKDIR /root/code/platform/
 RUN /opt/conda/envs/pytorchrl/bin/pip install .
 WORKDIR /root/code/pytorchrl
 
+ENV BASH_ENV /root/.bashrc
