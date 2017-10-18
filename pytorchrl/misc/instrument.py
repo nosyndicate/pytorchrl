@@ -802,14 +802,14 @@ def launch_ec2(params_list, exp_prefix, docker_image, code_full_path,
         # """.format(code_full_path=code_full_path, local_code_path=config.DOCKER_CODE_DIR,
         #            aws_region=config.AWS_REGION_NAME))
         sio.write("""
-            aws s3 cp {code_full_path} /tmp/rllab_code.tar.gz
+            aws s3 cp {code_full_path} /tmp/pytorchrl_code.tar.gz
         """.format(code_full_path=code_full_path, local_code_path=config.DOCKER_CODE_DIR))
         sio.write("""
             mkdir -p {local_code_path}
         """.format(code_full_path=code_full_path, local_code_path=config.DOCKER_CODE_DIR,
                    aws_region=config.AWS_REGION_NAME))
         sio.write("""
-            tar -zxvf /tmp/rllab_code.tar.gz -C {local_code_path}
+            tar -zxvf /tmp/pytorchrl_code.tar.gz -C {local_code_path}
         """.format(code_full_path=code_full_path, local_code_path=config.DOCKER_CODE_DIR,
                    aws_region=config.AWS_REGION_NAME))
     else:

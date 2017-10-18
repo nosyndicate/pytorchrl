@@ -19,7 +19,7 @@ class VG(VariantGenerator):
         return ['pytorch-pearlmutter']
 
 def run_task(*_):
-    env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
+    env = normalize(GymEnv('Pendulum-v0', record_video=False, force_reset=True))
 
     observation_dim = np.prod(env.observation_space.shape)
     action_dim = np.prod(env.action_space.shape)
@@ -54,17 +54,17 @@ variants = VG().variants()
 for v in variants:
     run_experiment_lite(
         run_task,
-        exp_prefix="trpo_pendulum_pearlmutter",
+        exp_prefix='trpo_pendulum_pearlmutter',
         # Number of parallel workers for sampling
         n_parallel=1,
         # Only keep the snapshot parameters for the last iteration
-        snapshot_mode="last",
+        snapshot_mode='last',
         # Specifies the seed for the experiment. If this is not provided, a random seed
         # will be used
-        seed=v["seed"],
+        seed=v['seed'],
         variant=v,
-        # mode='ec2',
-        # dry=True,
+        mode='ec2',
+        dry=True,
         # plot=True,
         # terminate_machine=False,
     )

@@ -105,3 +105,9 @@ ENV/
 
 # personal config files
 config_personal.py
+
+# aws key folder
+private/
+
+# data folder
+data/
