@@ -63,7 +63,7 @@ for v in variants:
         # will be used
         seed=v['seed'],
         variant=v,
-        mode='local_docker',
+        mode='ec2',
         # dry=True,
         # plot=True,
         # terminate_machine=False,

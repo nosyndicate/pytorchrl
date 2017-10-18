@@ -20,7 +20,7 @@ ENV PATH /opt/conda/bin:$PATH
 
 # Install basic dependencies
 RUN apt-get install -y cmake build-essential pkg-config libpython3-dev \
-    libboost-python-dev libboost-dev python3 zlib1g-dev 
+    libboost-python-dev libboost-dev python3 zlib1g-dev
 
 
 RUN apt-get install qt4-dev-tools -y
@@ -33,12 +33,13 @@ RUN git clone -b ec2 https://github.com/nosyndicate/pytorchrl.git
 RUN git clone https://github.com/nosyndicate/platform.git
 
 
-
 WORKDIR /root/code/pytorchrl/
 
 RUN conda create -y -n pytorchrl
 ENV PYTHONPATH /root/code/pytorchrl:$PYTHONPATH
 
+# Need this to use the python executable in conda env, not the
+# default one. Otherwise, the pip packages won't be found.
 ENV PATH /opt/conda/envs/pytorchrl/bin:$PATH
 
 
@@ -48,5 +49,9 @@ RUN conda env update -f environment.yml
 WORKDIR /root/code/platform/
 RUN /opt/conda/envs/pytorchrl/bin/pip install .
 WORKDIR /root/code/pytorchrl
+
+# Need this to pass the last check in config.py.
+# Otherwise, the process is exiting.
+ENV CIRCLECI=true
 
 ENV BASH_ENV /root/.bashrc
