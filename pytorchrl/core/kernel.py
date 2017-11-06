@@ -42,7 +42,7 @@ class Kernel(object):
         ----------
         xs (Variable): Left particles.
         ys (Variable): Right particles
-        kappa (Variable): Kernel
+        kappa (Variable): Kernel value
         grad_x (Variable): Gradient of 'kappa' with respect to 'xs'
         """
 
