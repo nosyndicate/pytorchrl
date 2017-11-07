@@ -104,6 +104,7 @@ class SVGDMLPQFunction(nn.Module, Parameterized):
         concate_layers = [self.observation_layer, self.action_layer]
         # Apply the concate layer
         result = self.concate_layer_bias
+
         for var, layer in zip(inputs, concate_layers):
             result = result + layer(var)
 

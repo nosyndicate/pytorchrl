@@ -7,7 +7,17 @@ from pytorchrl.algos.softq import SoftQ
 from pytorchrl.q_functions.svgd_mlp_q_function import SVGDMLPQFunction
 from pytorchrl.policies.svgd_policy import SVGDPolicy
 from pytorchrl.envs.multigoal_env import MultiGoalEnv
+from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant
 
+
+class VG(VariantGenerator):
+    @variant
+    def seed(self):
+        return [1, 11, 21, 31, 41]
+
+    @variant
+    def name(self):
+        return ['pytorch']
 
 def run_task(*_):
     env = normalize(MultiGoalEnv())
@@ -44,7 +54,7 @@ def run_task(*_):
         qf_target_n_particles=16,
         qf_learning_rate=1e-3,
         policy_learning_rate=1e-3,
-        kernel_n_particles=16,
+        kernel_n_particles=32,
         kernel_update_ratio=0.5,
         n_eval_episodes=10,
         soft_target_tau=1000,
@@ -55,8 +65,26 @@ def run_task(*_):
 
     algo.train()
 
-if __name__ == '__main__':
-    run_task()
+# if __name__ == '__main__':
+#     run_task()
+
+variants = VG().variants()
+
+for v in variants:
+    run_experiment_lite(
+        run_task,
+        exp_prefix="softq_multigoal",
+        # Number of parallel workers for sampling
+        n_parallel=1,
+        # Only keep the snapshot parameters for the last iteration
+        snapshot_mode="last",
+        # Specifies the seed for the experiment. If this is not provided, a random seed
+        # will be used
+        seed=v["seed"],
+        variant=v,
+        # plot=True,
+        # terminate_machine=False,
+    )
 
 
 

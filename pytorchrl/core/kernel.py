@@ -60,7 +60,6 @@ class Kernel(object):
         return self.grad_x  # ... x Kx x Ky x D
 
 
-
 class AdaptiveIsotropicGaussianKernel(Kernel):
     def __init__(self, xs, ys, h_min=1e-3):
         """
