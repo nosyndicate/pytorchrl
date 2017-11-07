@@ -49,7 +49,7 @@ def run_task(*_):
         min_pool_size=100,
         replay_pool_size=1000000,
         discount=0.99,
-        alpha=1,
+        alpha=0.1,
         max_path_length=30,
         qf_target_n_particles=16,
         qf_learning_rate=1e-3,
@@ -65,26 +65,26 @@ def run_task(*_):
 
     algo.train()
 
-# if __name__ == '__main__':
-#     run_task()
+if __name__ == '__main__':
+    run_task()
 
-variants = VG().variants()
+# variants = VG().variants()
 
-for v in variants:
-    run_experiment_lite(
-        run_task,
-        exp_prefix="softq_multigoal",
-        # Number of parallel workers for sampling
-        n_parallel=1,
-        # Only keep the snapshot parameters for the last iteration
-        snapshot_mode="last",
-        # Specifies the seed for the experiment. If this is not provided, a random seed
-        # will be used
-        seed=v["seed"],
-        variant=v,
-        # plot=True,
-        # terminate_machine=False,
-    )
+# for v in variants:
+#     run_experiment_lite(
+#         run_task,
+#         exp_prefix="softq_multigoal",
+#         # Number of parallel workers for sampling
+#         n_parallel=1,
+#         # Only keep the snapshot parameters for the last iteration
+#         snapshot_mode="last",
+#         # Specifies the seed for the experiment. If this is not provided, a random seed
+#         # will be used
+#         seed=v["seed"],
+#         variant=v,
+#         # plot=True,
+#         # terminate_machine=False,
+#     )
 
 
 

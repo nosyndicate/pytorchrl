@@ -5,6 +5,7 @@ from rllab.spaces.box import Box
 from rllab.envs.base import Env
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 

@@ -1,4 +1,5 @@
 import copy
+import time
 
 import numpy as np
 import pyprind
@@ -270,12 +271,11 @@ class SoftQ(RLAlgorithm):
             logger.pop_prefix()
 
             if self.plot:
-                rollout(self.env, self.policy, animated=True,
-                    max_path_length=self.max_path_length,
+                rollout(self.env, self.policy,
+                    path_length=self.max_path_length,
+                    render=True,
                     speedup=2)
-                if self.pause_for_plot:
-                    input("Plotting evaluation run: Press Enter to "
-                              "continue...")
+
         self.env.terminate()
 
 
