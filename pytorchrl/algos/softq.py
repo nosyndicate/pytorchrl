@@ -17,14 +17,6 @@ from pytorchrl.core.kernel import AdaptiveIsotropicGaussianKernel
 from pytorchrl.misc.tensor_utils import log_sum_exp
 from pytorchrl.sampler import parallel_sampler
 
-
-
-import sys
-
-# TODO (ewei)
-# 2. update for policy
-
-
 def input_bounds(inp, output):
     """
     Modifies the gradient of a given graph ('output') with respect to its
@@ -120,8 +112,6 @@ class SoftQ(RLAlgorithm):
     """
 
     """
-
-
     def __init__(
         self,
         env,
@@ -162,6 +152,11 @@ class SoftQ(RLAlgorithm):
         policy_learning_rate (float): SVGD learning rate
         kernel_n_particles (int): Total number of particles per state used in
             the SVGD updates.
+        alpha (int): TODO (ewei), verify this:
+            this seems have no relationship with the alpha
+            in soft q learning, but in svgd, see eq (21) in SVGD draw sample paper
+            Learning to draw samples with amortized stein variational gradient
+            descent.
         """
         self.env = env
         self.observation_dim = int(np.prod(env.observation_space.shape))
