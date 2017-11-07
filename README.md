@@ -8,6 +8,7 @@ occasionally borrow code from [rllab](https://github.com/rll/rllab).
   * Online
     * DDPG (Deep Deterministic Policy Gradient)
     * NAF (Normalized Advantage Function)
+    * Soft Q-Learning (Deep Energy-Based Policy)
   * Batch
     * TRPO (Trust Region Policy Optimization)
 
