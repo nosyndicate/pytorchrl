@@ -26,4 +26,5 @@ dependencies:
         - boto3
         - git+https://github.com/neocxi/Lasagne.git@484866cf8b38d878e92d521be445968531646bb8#egg=Lasagne
         - git+https://github.com/dwicke/rllab.git
+        - git+https://github.com/nosyndicate/platform.git
         - cloudpickle
