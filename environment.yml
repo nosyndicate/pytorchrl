@@ -8,15 +8,15 @@ channels:
     - jjhelmus
 dependencies:
     - python==3.5.3
-    - pytorch==0.2.0
     - scipy
     - mako
     - path.py
     - pybox2d
     - pygame
     - joblib==0.10.3
-    - torchvision
     - pip:
+        - http://download.pytorch.org/whl/torch-0.3.0.post4-cp35-cp35m-macosx_10_6_x86_64.whl 
+        - torchvision
         - numpy==1.13.1
         - gym==0.9.2
         - matplotlib==2.0.2
@@ -25,5 +25,5 @@ dependencies:
         - pyprind
         - boto3
         - git+https://github.com/neocxi/Lasagne.git@484866cf8b38d878e92d521be445968531646bb8#egg=Lasagne
-        - git+https://github.com/dwicke/rllab.git
+        - git+https://github.com/rll/rllab.git
         - cloudpickle
