@@ -213,6 +213,51 @@ def cg(f_Ax, b, cg_iters=10, residual_tol=1e-10):
             break
     return x
 
+def line_search(f, x0, dx, expected_improvement, y0=None,
+    backtrack_ratio=0.8, max_backtracks=15, accept_ratio=0.1, atol=1e-7):
+    """
+    Perform line search on the function f at x.
+
+    Parameters
+    ----------
+    f (function): The function to perform line search on, it receive a tensor
+        and return a float
+    x0 (torch.Tensor): The current parameter value
+    dx (torch.Tensor): The full descent direction. We shrink along this direction.
+    expected_improvement (float): Expected amount of improvement when taking the
+        full descent direction, typically computed by
+        y0 - y ≈ (f_x|x=x0).dot(dx),
+        where f_x|x=x0 is the gradient of f w.r.t. x, evaluated at x0.
+    y0 (float): The initial value of f at x
+    backtrack_ratio (float): Ratio to shrink the descent direction per line
+        search step
+    max_backtracks (int): Maximum number of backtracking steps
+    accept_ratio (float): minimum acceptance ratio of
+        actual_improvement / expected_improvement
+    atol (float): Minimum expectd improvement to conduct line search
+
+    Returns
+    -------
+    descent step (torch.Tensor):
+    """
+    if expected_improvement >= atol:
+        if y0 is None:
+            y0 = f(x0)
+        for ratio in backtrack_ratio ** np.arange(max_backtracks):
+            x = x0 - ratio * dx
+            y = f(x)
+            actual_improvement = y0 - y
+            if actual_improvement / (expected_improvement * ratio) >= accept_ratio:
+                logger.log('ExpectedImprovement: {}'.format(expected_improvement * ratio))
+                logger.log('ActualImprovement: {}'.format(actual_improvement))
+                logger.log('ImprovementRatio: {}'.format(actual_improvement /
+                         (expected_improvement * ratio)))
+            return x
+    logger.log('ExpectedImprovement: {}'.format(expected_improvement))
+    logger.log('ActualImprovement: {}'.format(0.0))
+    logger.log('ImprovementRatio: {}'.format(0.0))
+    return x0
+
 
 class TRPO(BatchPolopt):
     """
@@ -385,7 +430,7 @@ class TRPO(BatchPolopt):
                 result = surr_loss.data[0] + 1e100 * constraint_part
                 return result
 
-            new_parameters = self.line_search(barrier_func,
+            new_parameters = line_search(barrier_func,
                 x0=current_parameters, dx=tight_descent_step,
                 y0=surr_loss.data[0], expected_improvement=expected_improvement)
 
@@ -409,48 +454,3 @@ class TRPO(BatchPolopt):
             baseline=self.baseline,
             env=self.env,
         )
-
-    def line_search(self, f, x0, dx, expected_improvement, y0=None,
-        backtrack_ratio=0.8, max_backtracks=15, accept_ratio=0.1, atol=1e-7):
-        """
-        Perform line search on the function f at x.
-
-        Parameters
-        ----------
-        f (function): The function to perform line search on, it receive a tensor
-            and return a float
-        x0 (torch.Tensor): The current parameter value
-        dx (torch.Tensor): The full descent direction. We shrink along this direction.
-        expected_improvement (float): Expected amount of improvement when taking the
-            full descent direction, typically computed by
-            y0 - y ≈ (f_x|x=x0).dot(dx),
-            where f_x|x=x0 is the gradient of f w.r.t. x, evaluated at x0.
-        y0 (float): The initial value of f at x
-        backtrack_ratio (float): Ratio to shrink the descent direction per line
-            search step
-        max_backtracks (int): Maximum number of backtracking steps
-        accept_ratio (float): minimum acceptance ratio of
-            actual_improvement / expected_improvement
-        atol (float): Minimum expectd improvement to conduct line search
-
-        Returns
-        -------
-        descent step (torch.Tensor):
-        """
-        if expected_improvement >= atol:
-            if y0 is None:
-                y0 = f(x0)
-            for ratio in backtrack_ratio ** np.arange(max_backtracks):
-                x = x0 - ratio * dx
-                y = f(x)
-                actual_improvement = y0 - y
-                if actual_improvement / (expected_improvement * ratio) >= accept_ratio:
-                    logger.log('ExpectedImprovement: {}'.format(expected_improvement * ratio))
-                    logger.log('ActualImprovement: {}'.format(actual_improvement))
-                    logger.log('ImprovementRatio: {}'.format(actual_improvement /
-                             (expected_improvement * ratio)))
-                return x
-        logger.log('ExpectedImprovement: {}'.format(expected_improvement))
-        logger.log('ActualImprovement: {}'.format(0.0))
-        logger.log('ImprovementRatio: {}'.format(0.0))
-        return x0

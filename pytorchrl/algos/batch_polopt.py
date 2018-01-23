@@ -117,24 +117,28 @@ class BatchPolopt(RLAlgorithm):
         self.start_worker()
         for itr in range(self.current_itr, self.n_itr):
             with logger.prefix('itr #%d | ' % itr):
+                logger.log('Obtaining samples...')
                 paths = self.sampler.obtain_samples(itr)
+                logger.log('Processing samples...')
                 samples_data = self.sampler.process_samples(itr, paths)
+                logger.log('Logging diagnostics...')
                 self.log_diagnostics(paths)
+                logger.log('Optimizing policy...')
                 self.optimize_policy(itr, samples_data)
-                logger.log('saving snapshot...')
+                logger.log('Saving snapshot...')
                 params = self.get_itr_snapshot(itr, samples_data)
                 self.current_itr = itr + 1
                 params['algo'] = self
                 if self.store_paths:
                     params['paths'] = samples_data['paths']
                 logger.save_itr_params(itr, params)
-                logger.log('saved')
+                logger.log('Saved')
                 logger.dump_tabular(with_prefix=False)
                 if self.plot:
                     self.update_plot()
                     if self.pause_for_plot:
-                        input("Plotting evaluation run: Press Enter to "
-                                  "continue...")
+                        input('Plotting evaluation run: Press Enter to '
+                                  'continue...')
 
         self.shutdown_worker()
 
