@@ -12,4 +12,7 @@ occasionally borrow code from [rllab](https://github.com/rll/rllab).
   * Batch
     * TRPO (Trust Region Policy Optimization)
 
+  * Inverse Reinforcement Learning & Imitation Learning
+    * Generative Adversarial Imitation Learning
+
 
