@@ -64,7 +64,7 @@ class Discriminator(nn.Module, Parameterized):
         Returns
         -------
         logits (Variable): Logits of the state action pair. If we
-            apply state-action pair to the logit, we recover the
+            apply exp to the logit, we recover the
             probability of state-action are being real (or fake).
         """
         state_action = torch.cat((obs_variable, actions_variable), 1)

@@ -42,18 +42,7 @@ class GAIL(SingleTimestepIRL):
     @overrides
     def fit(self, trajs, batch_size=32, max_itrs=100, **kwargs):
         """
-        Train the Discriminator to distinguish expert from learner.
-
-        Parameters
-        ----------
-        trajs (): trajectories sample from current policy
-        batch_size (integer):
-        max_itrs (integer):
-        kwargs (dict):
-
-        Returns
-        -------
-        mean_loss ():
+        See doc of the same function in airl.py
         """
         obs, acts = self.extract_paths(trajs)
         expert_obs, expert_acts = self.expert_trajs
@@ -66,18 +55,10 @@ class GAIL(SingleTimestepIRL):
             labels = np.zeros((batch_size * 2, 1))
             labels[batch_size:] = 1.0
 
-            # print(obs_batch)
-            # print(expert_obs_batch)
-            # print(labels)
-
             # Stack the sample from learner and expert
             obs_batch = np.concatenate([obs_batch, expert_obs_batch], axis=0)
             act_batch = np.concatenate([act_batch, expert_act_batch], axis=0)
 
-            # print(obs_batch)
-
-            # import sys
-            # sys.exit(0)
 
             obs_var = Variable(torch.from_numpy(obs_batch)).type(torch.FloatTensor)
             act_var = Variable(torch.from_numpy(act_batch)).type(torch.FloatTensor)
@@ -101,7 +82,7 @@ class GAIL(SingleTimestepIRL):
     @overrides
     def eval(self, paths, **kwargs):
         """
-        Return bonus
+        See doc of the same function in airl.py
         """
         obs, acts = self.extract_paths(paths)
         scores = self.discriminator.prediction(obs, acts)

@@ -155,6 +155,9 @@ class BatchPolopt(RLAlgorithm):
         raise NotImplementedError
 
     def optimize_policy(self, itr, samples_data):
+        """
+        Optimize the policy using the samples_data.
+        """
         raise NotImplementedError
 
     def update_plot(self):

@@ -8,8 +8,6 @@ import rllab.plotter as plotter
 
 from pytorchrl.algos.batch_polopt import BatchSampler
 
-# from inverse_rl.utils.hyperparametrized import Hyperparametrized
-
 
 class IRLBatchPolopt(RLAlgorithm):
     """
@@ -115,7 +113,6 @@ class IRLBatchPolopt(RLAlgorithm):
 
     def shutdown_worker(self):
         self.sampler.shutdown_worker()
-
 
     def log_avg_returns(self, paths):
         undiscounted_returns = [sum(path["rewards"]) for path in paths]

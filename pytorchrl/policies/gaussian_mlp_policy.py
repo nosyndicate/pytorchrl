@@ -221,6 +221,39 @@ class GaussianMLPPolicy(StochasticPolicy, Parameterized):
 
         return actions, dict(mean=means, log_std=log_stds)
 
+    def get_actions(self, observations):
+        """
+        Get observation and returnt the actions for the observations.
+        This is the batch version of the get_action method.
+
+        If the input observations is of size n * obs_dim, where
+        n is the batch size, and obs_dim is the dimension of the observation,
+        then the actions, means, and log_stds in the return values is
+        of size n * act_dim, where act_dim is the size of action dimension.
+
+        Parameters
+        ----------
+        observations (numpy.ndarray): current observation.
+
+        Returns
+        -------
+        actions (numpy.ndarray): actions for the observations.
+        agent_infos (dict): Additional info for the agent
+        """
+        obs_variable = Variable(torch.from_numpy(observations),
+            volatile=True).type(torch.FloatTensor)
+
+        means_variable, log_stds_variable = self.forward(obs_variable)
+
+        means = means_variable.data.numpy()
+        log_stds = log_stds_variable.data.numpy()
+
+        rnd = np.random.normal(size=means.shape)
+
+        actions = rnd * np.exp(log_stds) + means
+
+        return actions, dict(mean=means, log_std=log_stds)
+
     @overrides
     def get_internal_params(self):
         return self.parameters()
