@@ -35,6 +35,8 @@ def main():
         store_paths=True,
         discrim_train_itrs=50,
         irl_model_wt=1.0,
+        # TODO (ewei), it seems adding the policy entropy term will worsen the result
+        # compared to not use entropy at all
         entropy_weight=0.1, # This should be 1.0 but 0.1 seems to work better
         zero_environment_reward=True,
         baseline=LinearFeatureBaseline(env_spec=env.spec),
