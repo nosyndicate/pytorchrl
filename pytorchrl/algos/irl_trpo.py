@@ -101,6 +101,10 @@ class IRLTRPO(IRLBatchPolopt):
         obs_var = Variable(torch.from_numpy(all_obs).type(torch.FloatTensor))
         action_var = Variable(torch.from_numpy(all_actions).type(torch.FloatTensor))
         adv_var = Variable(torch.from_numpy(all_adv).type(torch.FloatTensor))
+
+        # TODO (ewei), need to add the policy entropy regularization term here.
+        # for adv_var (why adv_var)
+
         old_dist_var = {
             k: Variable(torch.from_numpy(v).type(torch.FloatTensor))
             for k, v in old_dist.items()

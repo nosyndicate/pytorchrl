@@ -120,10 +120,11 @@ class IRLBatchPolopt(RLAlgorithm):
         return avg_return
 
     def get_irl_params(self):
-        # TODO (ewei) need to change this part
         return self.irl_params
 
     def compute_irl(self, paths, itr=0):
+
+        # Zero the original reward signal
         if self.no_reward:
             tot_rew = 0
             for path in paths:
@@ -136,30 +137,29 @@ class IRLBatchPolopt(RLAlgorithm):
 
         if self.train_irl:
             max_itrs = self.discrim_train_itrs
-            # TODO (ewei) need to put learning in the parameter
-            lr=1e-3
             mean_loss = self.irl_model.fit(
                 paths, policy=self.policy, itr=itr,
-                max_itrs=max_itrs, lr=lr, logger=logger)
+                max_itrs=max_itrs, logger=logger)
 
             logger.record_tabular('IRLLoss', mean_loss)
-            self.__irl_params = self.irl_model.get_params()
+            self.irl_params = self.irl_model.get_params()
 
-        probs = self.irl_model.eval(paths, gamma=self.discount, itr=itr)
+        estimated_rewards = self.irl_model.eval(paths, gamma=self.discount, itr=itr)
 
-        logger.record_tabular('IRLRewardMean', np.mean(probs))
-        logger.record_tabular('IRLRewardMax', np.max(probs))
-        logger.record_tabular('IRLRewardMin', np.min(probs))
+        logger.record_tabular('IRLRewardMean', np.mean(estimated_rewards))
+        logger.record_tabular('IRLRewardMax', np.max(estimated_rewards))
+        logger.record_tabular('IRLRewardMin', np.min(estimated_rewards))
 
 
-        # TODO (ewei) what is this mean?
+        # Replace the original reward signal with learned reward signal
+        # This will be used by agents to learn policy
         if self.irl_model.score_trajectories:
             # TODO: should I add to reward here or after advantage computation?
             for i, path in enumerate(paths):
-                path['rewards'][-1] += self.irl_model_wt * probs[i]
+                path['rewards'][-1] += self.irl_model_wt * estimated_rewards[i]
         else:
             for i, path in enumerate(paths):
-                path['rewards'] += self.irl_model_wt * probs[i]
+                path['rewards'] += self.irl_model_wt * estimated_rewards[i]
         return paths
 
     def train(self):
