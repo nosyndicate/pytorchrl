@@ -23,9 +23,23 @@ class GAIL(SingleTimestepIRL):
         env_spec,
         expert_trajs=None,
         discriminator_class=Discriminator,
+        discriminator_args={},
         optimizer_class=optim.Adam,
         discriminator_lr=1e-3,
     ):
+        """
+        Parameters
+        ----------
+        env_spec (): Environment
+        expert_trajs (): The demonstration from experts, the trajectories sampled from
+            experts policy, positive samples used to train discriminator
+        discriminator_class (): Discriminator class
+        discriminator_args (dict): dict of arguments for discriminator
+        optimizer_class (): Optimizer class
+        discrmininator (float): learning rate for discriminator
+        discriminator_args (dict): dict of arguments for discriminator
+        l2_reg (float): L2 penalty for discriminator parameters
+        """
         super(GAIL, self).__init__()
         self.obs_dim = env_spec.observation_space.flat_dim
         self.action_dim = env_spec.action_space.flat_dim
@@ -34,7 +48,9 @@ class GAIL(SingleTimestepIRL):
         self.expert_trajs = self.extract_paths(expert_trajs)
 
         # Build energy model
-        self.discriminator = discriminator_class(self.obs_dim, self.action_dim)
+        self.discriminator = discriminator_class(
+            self.obs_dim, self.action_dim, **discriminator_args)
+
         self.optimizer = optimizer_class(self.discriminator.parameters(),
             lr=discriminator_lr)
 

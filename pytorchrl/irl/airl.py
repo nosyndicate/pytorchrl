@@ -20,10 +20,12 @@ class AIRL(SingleTimestepIRL):
         env_spec,
         expert_trajs=None,
         discriminator_class=AIRLDiscriminator,
+        discriminator_args={},
         optimizer_class=optim.Adam,
         discriminator_lr=1e-3,
         l2_reg=0,
-        discount=1.0
+        discount=1.0,
+
     ):
         """
         Parameters
@@ -34,6 +36,7 @@ class AIRL(SingleTimestepIRL):
         discriminator_class (): Discriminator class
         optimizer_class (): Optimizer class
         discrmininator (float): learning rate for discriminator
+        discriminator_args (dict): dict of arguments for discriminator
         l2_reg (float): L2 penalty for discriminator parameters
         discount (float): discount rate for reward
         """
@@ -49,7 +52,9 @@ class AIRL(SingleTimestepIRL):
         self.expert_trajs_extracted = self.extract_paths(expert_trajs)
 
         # Build energy model
-        self.discriminator = discriminator_class(self.obs_dim, self.action_dim)
+        self.discriminator = discriminator_class(
+            self.obs_dim, self.action_dim, **discriminator_args)
+
         self.optimizer = optimizer_class(self.discriminator.parameters(),
             lr=discriminator_lr, weight_decay=l2_reg)
 
