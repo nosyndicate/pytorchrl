@@ -129,6 +129,7 @@ class BatchPolopt(RLAlgorithm):
                 params = self.get_itr_snapshot(itr, samples_data)
                 self.current_itr = itr + 1
                 params['algo'] = self
+                # Save the trajectories into the param
                 if self.store_paths:
                     params['paths'] = samples_data['paths']
                 logger.save_itr_params(itr, params)

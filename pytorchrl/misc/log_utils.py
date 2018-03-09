@@ -11,7 +11,7 @@ import numpy as np
 from pytorchrl.misc.hyperparametrized import extract_hyperparams
 
 @contextlib.contextmanager
-def rllab_logdir(algo=None, dirname=None):
+def logdir(algo=None, dirname=None):
     if dirname:
         rllablogger.set_snapshot_dir(dirname)
     dirname = rllablogger.get_snapshot_dir()
@@ -43,7 +43,7 @@ def get_expert_fnames(log_dir, n=5):
         yield fname
 
 
-def load_experts(fname, max_files=float('inf'), min_return=None):
+def rllab_load_experts(fname, max_files=float('inf'), min_return=None):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     if hasattr(fname, '__iter__'):
@@ -73,6 +73,55 @@ def load_experts(fname, max_files=float('inf'), min_return=None):
     return trajs
 
 
-def load_latest_experts(logdir, n=5, min_return=None):
-    return load_experts(get_expert_fnames(logdir, n=n), min_return=min_return)
+def load_experts(fname, max_files=float('inf'), min_return=None,
+    include_next_state=False):
+    """
+    """
+    if hasattr(fname, '__iter__'):
+        paths = []
+        for fname_ in fname:
+            snapshot_dict = joblib.load(fname_)
+            paths.extend(snapshot_dict['paths'])
+    else:
+        snapshot_dict = joblib.load(fname)
+        paths = snapshot_dict['paths']
+
+    trajs = []
+    for path in paths:
+        obses = path['observations']
+        actions = path['actions']
+        next_obs = path['next_obs']
+        terminals = path['terminals']
+        returns = path['returns']
+        total_return = np.sum(returns)
+        if (min_return is None) or (total_return >= min_return):
+            if include_next_state:
+                traj = {
+                    'observations': obses,
+                    'actions': actions,
+                    'next_obs': next_obs,
+                    'terminals': terminals
+                }
+            else:
+                traj = {'observations': obses, 'actions': actions}
+            trajs.append(traj)
+    random.shuffle(trajs)
+    print('Loaded %d trajectories' % len(trajs))
+    return trajs
+
+
+def load_latest_experts(logdir, n=5, min_return=None, include_next_state=False):
+    """
+    Load the trajectories from the last n epoches of training of expert.
+
+    Parameters
+    ----------
+    n (int): Indicate the last n epoches we want to load trajectories from.
+    min_return (float): A minimum reward threshold for a trajectory to qualify
+        as demonstration.
+    include_next_state (boolean): Do we use (s, a, r) tuple or
+        (s, a, r, s', t) tuple
+    """
+    return load_experts(get_expert_fnames(logdir, n=n), min_return=min_return
+        include_next_state=include_next_state)
 

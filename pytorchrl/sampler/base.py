@@ -70,6 +70,7 @@ class BaseSampler(Sampler):
         )
 
         if not self.algo.policy.recurrent:
+            # Concatenate all samples into one tensor
             observations = tensor_utils.concat_tensor_list([path['observations'] for path in paths])
             actions = tensor_utils.concat_tensor_list([path['actions'] for path in paths])
             rewards = tensor_utils.concat_tensor_list([path['rewards'] for path in paths])
