@@ -90,12 +90,12 @@ def load_experts(fname, max_files=float('inf'), min_return=None,
     for path in paths:
         obses = path['observations']
         actions = path['actions']
-        next_obs = path['next_obs']
-        terminals = path['terminals']
         returns = path['returns']
         total_return = np.sum(returns)
         if (min_return is None) or (total_return >= min_return):
             if include_next_state:
+                next_obs = path['next_obs']
+                terminals = path['terminals']
                 traj = {
                     'observations': obses,
                     'actions': actions,
@@ -122,6 +122,6 @@ def load_latest_experts(logdir, n=5, min_return=None, include_next_state=False):
     include_next_state (boolean): Do we use (s, a, r) tuple or
         (s, a, r, s', t) tuple
     """
-    return load_experts(get_expert_fnames(logdir, n=n), min_return=min_return
+    return load_experts(get_expert_fnames(logdir, n=n), min_return=min_return,
         include_next_state=include_next_state)
 

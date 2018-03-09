@@ -9,12 +9,12 @@ from pytorchrl.irl.gail import GAIL
 from pytorchrl.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from pytorchrl.misc.log_utils import load_latest_experts
 
+import torch.nn as nn
 
 def main():
     env = GymEnv('Pendulum-v0', record_video=False, record_log=False)
 
-    experts = load_latest_experts('data/irl/pendulum', n=5)
-
+    experts = load_latest_experts('data/irl/pendulum2', n=5)
 
     irl_model = GAIL(env_spec=env.spec, expert_trajs=experts)
     observation_dim = np.prod(env.observation_space.shape)

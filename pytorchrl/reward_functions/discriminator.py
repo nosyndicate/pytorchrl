@@ -38,6 +38,7 @@ class Discriminator(nn.Module, Parameterized):
         self.observation_dim = observation_dim
         self.action_dim = action_dim
 
+
         # Define network
         layers = []
         sizes = [int(self.observation_dim + self.action_dim)] + list(hidden_sizes)
