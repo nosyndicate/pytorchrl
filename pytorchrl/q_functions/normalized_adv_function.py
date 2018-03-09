@@ -52,6 +52,7 @@ class NormalizedAdvantageFunction(Policy, Parameterized):
 
         # Define network
         self.v = self.define_single_network(vf_hidden_sizes, vf_nonlinearity, 1)
+        # TODO (ewei), the nn.Tanh seems not used, need to verified with paper
         self.mu = self.define_single_network(mean_hidden_sizes, mean_nonlinearity,
             self.action_dim, output_nonlinearity=nn.Tanh)
         self.l_output = int(self.action_dim * (self.action_dim + 1) / 2)
@@ -113,24 +114,33 @@ class NormalizedAdvantageFunction(Policy, Parameterized):
         q_var (Variable): Q value of the state and action,
             wrapped in Variable
         """
+        # V(s)
         v_var = self.forward_v(obs_var)
+        # \mu(s)
         mu_var = self.forward_mu(obs_var)
+        # L(s)
         l_var = self.forward_l(obs_var)
         size = len(obs_var)
 
+        # Scatter the output of l network into lower triangular matrice
         zero_matrices = Variable(torch.zeros(size, self.action_dim, self.action_dim))
         l_matrices_var = zero_matrices.masked_scatter_(self.formation_mask, l_var)
 
+        # Exponential the diagonal elements
         l_matrices_var = l_matrices_var * self.strict_lower_tri_mask \
             + torch.exp(l_matrices_var) * self.diag_mask
 
+        # P(s) = L(s) * L(s)^T
         p_var = torch.bmm(l_matrices_var, l_matrices_var.transpose(2, 1))
 
+        # u - \mu(s)
         u_minus_mu = (actions_var - mu_var).unsqueeze(2)
 
+        # A(s,a) = -1/2 (a - mu(s))^T * P(s) * (a - mu(s))
         a_var = -0.5 * torch.bmm(
             torch.bmm(u_minus_mu.transpose(2, 1), p_var), u_minus_mu)[:,:,0]
 
+        # Q(s,a) = A(s,a) + V(s)
         q_var = v_var + a_var
 
         return q_var
