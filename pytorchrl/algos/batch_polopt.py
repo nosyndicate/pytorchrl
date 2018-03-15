@@ -4,7 +4,7 @@ import rllab.plotter as plotter
 
 from pytorchrl.sampler.base import BaseSampler
 from pytorchrl.sampler import parallel_sampler
-
+from pytorchrl.sampler.utils import rollout
 
 
 class BatchSampler(BaseSampler):
@@ -162,5 +162,5 @@ class BatchPolopt(RLAlgorithm):
         raise NotImplementedError
 
     def update_plot(self):
-        if self.plot:
-            plotter.update_plot(self.policy, self.max_path_length)
+        rollout(self.env, self.policy, max_path_length=self.max_path_length,
+            animated=True, speedup=1, always_return_paths=False)

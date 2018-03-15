@@ -25,7 +25,6 @@ class AIRL(SingleTimestepIRL):
         discriminator_lr=1e-3,
         l2_reg=0,
         discount=1.0,
-
     ):
         """
         Parameters
