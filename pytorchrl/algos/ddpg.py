@@ -43,6 +43,7 @@ class DDPG(RLAlgorithm):
         soft_target_tau=0.001,
         n_updates_per_sample=1,
         scale_reward=1.0,
+        store_path=False,
         include_horizon_terminal_transitions=False,
         plot=False,
         pause_for_plot=False,
@@ -90,6 +91,7 @@ class DDPG(RLAlgorithm):
         self.es_path_returns = []
         self.paths_samples_cnt = 0
 
+        self.store_path = store_path
         self.scale_reward = scale_reward
 
     def start_worker(self):
@@ -258,6 +260,16 @@ class DDPG(RLAlgorithm):
             max_samples=self.eval_samples,
             max_path_length=self.max_path_length,
         )
+
+        if self.store_path:
+            self.paths = paths
+            # If we need to record the path, we record the original
+            # observation instead of the normalized one
+            for path in paths:
+                if 'orig_obs' in path['env_infos']:
+                    path['observations'] = path['env_infos']['orig_obs']
+
+
         average_discounted_return = np.mean(
             [special.discount_return(path["rewards"], self.discount) for path in paths]
         )
@@ -339,4 +351,5 @@ class DDPG(RLAlgorithm):
             policy=self.policy,
             target_qf=self.target_qf,
             target_policy=self.target_policy,
-            es=self.es)
+            es=self.es,
+            paths=self.paths)
