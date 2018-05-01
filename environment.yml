@@ -15,7 +15,8 @@ dependencies:
     - pygame
     - joblib==0.10.3
     - pip:
-        - http://download.pytorch.org/whl/torch-0.3.0.post4-cp35-cp35m-macosx_10_6_x86_64.whl 
+        - http://download.pytorch.org/whl/torch-0.3.0.post4-cp35-cp35m-macosx_10_6_x86_64.whl; sys_platform == 'darwin'
+        - http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp35-cp35m-linux_x86_64.whl; 'linux' in sys_platform
         - torchvision
         - numpy==1.13.1
         - gym==0.9.3
@@ -26,5 +27,7 @@ dependencies:
         - pyprind
         - boto3
         - git+https://github.com/neocxi/Lasagne.git@484866cf8b38d878e92d521be445968531646bb8#egg=Lasagne
+        - https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp35-cp35m-linux_x86_64.whl; 'linux' in sys_platform
+        - https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.0.1-py3-none-any.whl; sys_platform == 'darwin'
         - git+https://github.com/rll/rllab.git
         - cloudpickle
