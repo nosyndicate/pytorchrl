@@ -27,7 +27,7 @@ def main():
         discount=0.99,
         step_size=0.01,
         use_finite_diff_hvp=True,
-        plot=True,
+        # plot=True,
     )
 
     algo.train()
