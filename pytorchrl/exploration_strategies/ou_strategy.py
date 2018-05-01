@@ -11,6 +11,9 @@ class OUStrategy(object):
     The OU process satisfies the following stochastic differential equation:
     dxt = theta*(mu - xt)*dt + sigma*dWt
     where Wt denotes the Wiener process
+
+    To understand the effect of each parameters, see
+    http://www.math.ku.dk/~susanne/StatDiff/Overheads1b
     """
 
     def __init__(self, action_space, mu=0, theta=0.15, sigma=0.3, **kwargs):
