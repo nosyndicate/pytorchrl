@@ -92,6 +92,9 @@ class NormalizedEnv(ProxyEnv, Serializable):
             reward = self._apply_normalize_reward(reward)
         return Step(next_obs, reward * self._scale_reward, done, **info)
 
+    def seed(self, seed=None):
+        self.env.seed(seed)
+
     def __str__(self):
         return "Normalized: %s" % self._wrapped_env
 

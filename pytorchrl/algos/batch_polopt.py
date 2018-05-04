@@ -27,9 +27,8 @@ class BatchSampler(BaseSampler):
         cur_params = self.algo.policy.get_param_values()
 
         # Set seed for env, for reproduction
-        if isinstance(self.algo.env.env, gym.Env):
-            seed = np.random.randint(2**32-1)
-            self.algo.env.env.seed(seed)
+        seed = np.random.randint(2**32-1)
+        self.algo.env.seed(seed)
 
         paths = parallel_sampler.sample_paths(
             policy_params=cur_params,

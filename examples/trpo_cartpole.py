@@ -2,10 +2,10 @@ import numpy as np
 import gym
 
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
-from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
 
 from pytorchrl.algos.trpo import TRPO
+from pytorchrl.envs.gym_env import GymEnv
 from pytorchrl.policies.categorical_mlp_policy import CategoricalMLPPolicy
 from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant
 
@@ -13,14 +13,14 @@ from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, var
 class VG(VariantGenerator):
     @variant
     def seed(self):
-        return [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]
+        return [1]
 
     @variant
     def name(self):
         return ['pytorch-finite']
 
 def run_task(*_):
-    env = normalize(GymEnv("CartPole-v0", record_video=False, force_reset=True))
+    env = GymEnv("CartPole-v0", record_video=False, force_reset=True)
 
     observation_dim = np.prod(env.observation_space.shape)
     num_actions = env.action_space.n
@@ -40,7 +40,7 @@ def run_task(*_):
         baseline=baseline,
         batch_size=4000,
         max_path_length=env.horizon,
-        n_itr=50,
+        n_itr=1,
         discount=0.99,
         step_size=0.01,
         use_finite_diff_hvp=True,
@@ -67,5 +67,6 @@ for v in variants:
         # will be used
         seed=v['seed'],
         variant=v,
+        # dry=True,
         # plot=True,
     )

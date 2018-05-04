@@ -2,10 +2,10 @@ import numpy as np
 import gym
 
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
-from rllab.envs.gym_env import GymEnv
-from rllab.envs.normalized_env import normalize
 
 from pytorchrl.algos.trpo import TRPO
+from pytorchrl.envs.gym_env import GymEnv
+from pytorchrl.envs.normalized_env import normalize
 from pytorchrl.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant
 
@@ -19,7 +19,7 @@ class VG(VariantGenerator):
         return ['pytorch-pearlmutter']
 
 def run_task(*_):
-    env = normalize(GymEnv('Pendulum-v0', record_video=False, force_reset=True))
+    env = GymEnv('Pendulum-v0', record_video=False, force_reset=True)
 
     observation_dim = np.prod(env.observation_space.shape)
     action_dim = np.prod(env.action_space.shape)
@@ -36,7 +36,7 @@ def run_task(*_):
         env=env,
         policy=policy,
         baseline=baseline,
-        batch_size=4000,
+        batch_size=10000,
         max_path_length=env.horizon,
         n_itr=50,
         discount=0.99,
@@ -46,26 +46,26 @@ def run_task(*_):
     )
     algo.train()
 
-# if __name__ == '__main__':
-#     run_task()
+if __name__ == '__main__':
+    run_task()
 
-variants = VG().variants()
+# variants = VG().variants()
 
-for v in variants:
-    run_experiment_lite(
-        run_task,
-        exp_prefix='trpo_pendulum_pearlmutter',
-        # Number of parallel workers for sampling
-        n_parallel=1,
-        # Only keep the snapshot parameters for the last iteration
-        snapshot_mode='last',
-        # Specifies the seed for the experiment. If this is not provided, a random seed
-        # will be used
-        seed=v['seed'],
-        variant=v,
-        mode='ec2',
-        # dry=True,
-        # plot=True,
-        # terminate_machine=False,
-    )
+# for v in variants:
+#     run_experiment_lite(
+#         run_task,
+#         exp_prefix='trpo_pendulum_pearlmutter',
+#         # Number of parallel workers for sampling
+#         n_parallel=1,
+#         # Only keep the snapshot parameters for the last iteration
+#         snapshot_mode='last',
+#         # Specifies the seed for the experiment. If this is not provided, a random seed
+#         # will be used
+#         seed=v['seed'],
+#         variant=v,
+#         mode='local',
+#         # dry=True,
+#         # plot=True,
+#         # terminate_machine=False,
+#     )
 
