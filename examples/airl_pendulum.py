@@ -2,9 +2,9 @@ import numpy as np
 import gym
 
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
-from rllab.envs.gym_env import GymEnv
 
 from pytorchrl.algos.irl_trpo import IRLTRPO
+from pytorchrl.envs.gym_env import GymEnv
 from pytorchrl.irl.airl import AIRL
 from pytorchrl.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from pytorchrl.misc.log_utils import load_latest_experts
