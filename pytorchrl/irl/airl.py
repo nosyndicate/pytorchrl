@@ -7,6 +7,7 @@ import numpy as np
 from rllab.misc.overrides import overrides
 
 from pytorchrl.reward_functions.airl_discriminator import AIRLDiscriminator
+from pytorchrl.irl.fusion_manager import RamFusionDistr
 from pytorchrl.irl.imitation_learning import SingleTimestepIRL
 from pytorchrl.misc.utils import TrainingIterator
 
@@ -25,6 +26,7 @@ class AIRL(SingleTimestepIRL):
         discriminator_lr=1e-3,
         l2_reg=0,
         discount=1.0,
+        fusion=False,
     ):
         """
         Parameters
@@ -38,6 +40,7 @@ class AIRL(SingleTimestepIRL):
         discriminator_args (dict): dict of arguments for discriminator
         l2_reg (float): L2 penalty for discriminator parameters
         discount (float): discount rate for reward
+        fusion (boolean): whether use trajectories from old iterations to train.
         """
         super(AIRL, self).__init__()
         self.obs_dim = env_spec.observation_space.flat_dim
@@ -57,6 +60,11 @@ class AIRL(SingleTimestepIRL):
         self.optimizer = optimizer_class(self.discriminator.parameters(),
             lr=discriminator_lr, weight_decay=l2_reg)
 
+        if fusion:
+            self.fusion = RamFusionDistr(100, subsample_ratio=0.5)
+        else:
+            self.fusion = None
+
 
 
     def fit(self, trajs, policy=None, batch_size=32, max_itrs=100, logger=None, **kwargs):
@@ -75,6 +83,13 @@ class AIRL(SingleTimestepIRL):
         mean_loss (numpy.ndarray): A scalar indicate the average discriminator
             loss (Binary Cross Entropy Loss) of total max_iters iterations
         """
+        if self.fusion is not None:
+            # Get old trajectories
+            old_trajs = self.fusion.sample_paths(n=len(trajs))
+            # Add new trajectories for future use
+            self.fusion.add_paths(trajs)
+            # Mix old and new trajectories
+            trajs = trajs + old_trajs
 
         # Eval the prob of the trajectories under current policy
         # The result will be fill in part of the discriminator

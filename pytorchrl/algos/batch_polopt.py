@@ -1,6 +1,9 @@
+import numpy as np
 from rllab.algos.base import RLAlgorithm
 import rllab.misc.logger as logger
 import rllab.plotter as plotter
+
+import gym
 
 from pytorchrl.sampler.base import BaseSampler
 from pytorchrl.sampler import parallel_sampler
@@ -22,6 +25,12 @@ class BatchSampler(BaseSampler):
 
     def obtain_samples(self, itr):
         cur_params = self.algo.policy.get_param_values()
+
+        # Set seed for env, for reproduction
+        if isinstance(self.algo.env.env, gym.Env):
+            seed = np.random.randint(2**32-1)
+            self.algo.env.env.seed(seed)
+
         paths = parallel_sampler.sample_paths(
             policy_params=cur_params,
             max_samples=self.algo.batch_size,

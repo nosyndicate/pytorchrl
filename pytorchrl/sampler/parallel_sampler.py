@@ -90,6 +90,7 @@ def _worker_set_env_params(G,params,scope=None):
     G = _get_scoped_G(G, scope)
     G.env.set_param_values(params)
 
+
 def _worker_collect_one_path(G, max_path_length, scope=None):
     G = _get_scoped_G(G, scope)
     path = rollout(G.env, G.policy, max_path_length)
