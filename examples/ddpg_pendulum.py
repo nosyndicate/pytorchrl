@@ -1,10 +1,9 @@
 import numpy as np
 import gym
 
-from rllab.envs.gym_env import GymEnv
-from rllab.envs.normalized_env import normalize
-
 from pytorchrl.algos.ddpg import DDPG
+from pytorchrl.envs.gym_env import GymEnv
+from pytorchrl.envs.normalized_env import normalize
 from pytorchrl.exploration_strategies.ou_strategy import OUStrategy
 from pytorchrl.policies.deterministic_mlp_policy import DeterministicMLPPolicy
 from pytorchrl.q_functions.continuous_mlp_q_function import ContinuousMLPQFunction
@@ -14,11 +13,8 @@ from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, var
 class VG(VariantGenerator):
     @variant
     def seed(self):
-        return [1, 11, 21, 31, 41]
+        return [1]
 
-    @variant
-    def name(self):
-        return ['pytorch']
 
 def run_task(*_):
     env = normalize(GymEnv("Pendulum-v0", record_video=False, force_reset=True))
@@ -46,8 +42,8 @@ def run_task(*_):
         batch_size=64,
         max_path_length=100,
         epoch_length=1000,
-        min_pool_size=10000,
-        n_epochs=80,
+        min_pool_size=1000,
+        n_epochs=11,
         discount=0.99,
         scale_reward=0.01,
         qf_learning_rate=1e-3,

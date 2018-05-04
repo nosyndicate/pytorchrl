@@ -110,6 +110,8 @@ class DDPG(RLAlgorithm):
         path_length = 0
         path_return = 0
         terminal = False
+        # Seed the environment
+        self.env.seed(np.random.randint(2**32-1))
         observation = self.env.reset()
 
         sample_policy = copy.deepcopy(self.policy)

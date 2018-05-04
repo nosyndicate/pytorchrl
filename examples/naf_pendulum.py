@@ -1,10 +1,11 @@
 import numpy as np
 import gym
 
-from rllab.envs.gym_env import GymEnv
+
 from rllab.envs.normalized_env import normalize
 
 from pytorchrl.algos.naf import NAF
+from pytorchrl.envs.gym_env import GymEnv
 from pytorchrl.exploration_strategies.ou_strategy import OUStrategy
 from pytorchrl.q_functions.normalized_adv_function import NormalizedAdvantageFunction
 from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, variant

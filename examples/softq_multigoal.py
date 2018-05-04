@@ -13,11 +13,7 @@ from pytorchrl.misc.instrument import run_experiment_lite, VariantGenerator, var
 class VG(VariantGenerator):
     @variant
     def seed(self):
-        return [1, 11, 21, 31, 41]
-
-    @variant
-    def name(self):
-        return ['pytorch']
+        return [1]
 
 def run_task(*_):
     env = normalize(MultiGoalEnv())
@@ -60,31 +56,31 @@ def run_task(*_):
         soft_target_tau=1000,
         scale_reward=0.1,
         include_horizon_terminal_transitions=False,
-        plot=False,
+        # plot=True,
     )
 
     algo.train()
 
-if __name__ == '__main__':
-    run_task()
+# if __name__ == '__main__':
+#     run_task()
 
-# variants = VG().variants()
+variants = VG().variants()
 
-# for v in variants:
-#     run_experiment_lite(
-#         run_task,
-#         exp_prefix="softq_multigoal",
-#         # Number of parallel workers for sampling
-#         n_parallel=1,
-#         # Only keep the snapshot parameters for the last iteration
-#         snapshot_mode="last",
-#         # Specifies the seed for the experiment. If this is not provided, a random seed
-#         # will be used
-#         seed=v["seed"],
-#         variant=v,
-#         # plot=True,
-#         # terminate_machine=False,
-#     )
+for v in variants:
+    run_experiment_lite(
+        run_task,
+        exp_prefix="softq_multigoal",
+        # Number of parallel workers for sampling
+        n_parallel=1,
+        # Only keep the snapshot parameters for the last iteration
+        snapshot_mode="last",
+        # Specifies the seed for the experiment. If this is not provided, a random seed
+        # will be used
+        seed=v["seed"],
+        variant=v,
+        # plot=True,
+        # terminate_machine=False,
+    )
 
 
 

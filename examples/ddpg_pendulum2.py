@@ -1,10 +1,9 @@
 import numpy as np
 import gym
 
-from rllab.envs.gym_env import GymEnv
-from rllab.envs.normalized_env import normalize
-
 from pytorchrl.algos.ddpg import DDPG
+from pytorchrl.envs.gym_env import GymEnv
+from pytorchrl.envs.normalized_env import normalize
 from pytorchrl.exploration_strategies.ou_strategy import OUStrategy
 from pytorchrl.policies.deterministic_mlp_policy import DeterministicMLPPolicy
 from pytorchrl.q_functions.continuous_mlp_q_function import ContinuousMLPQFunction

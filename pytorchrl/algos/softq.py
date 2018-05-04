@@ -224,6 +224,8 @@ class SoftQ(RLAlgorithm):
         path_length = 0
         path_return = 0
         terminal = False
+        # Seed the environment
+        self.env.seed(np.random.randint(2**32-1))
         observation = self.env.reset()
 
         for epoch in range(self.n_epochs):
