@@ -146,10 +146,9 @@ class IRLBatchPolopt(RLAlgorithm):
 
         estimated_rewards = self.irl_model.eval(paths, gamma=self.discount, itr=itr)
 
-        logger.record_tabular('IRLRewardMean', np.mean(estimated_rewards))
-        logger.record_tabular('IRLRewardMax', np.max(estimated_rewards))
-        logger.record_tabular('IRLRewardMin', np.min(estimated_rewards))
-
+        logger.record_tabular('IRLRewardMean', np.mean(np.concatenate(estimated_rewards)))
+        logger.record_tabular('IRLRewardMax', np.max(np.concatenate(estimated_rewards)))
+        logger.record_tabular('IRLRewardMin', np.min(np.concatenate(estimated_rewards)))
 
         # Replace the original reward signal with learned reward signal
         # This will be used by agents to learn policy
