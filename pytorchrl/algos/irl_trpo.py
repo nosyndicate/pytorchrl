@@ -19,7 +19,7 @@ from pytorchrl.algos.trpo import (
 
 
 def surrogate_loss(policy, all_obs, all_actions, all_adv, old_dist, policy_ent):
-    """
+    r"""
     Compute the loss of policy evaluated at current parameter
     given the observation, action, and advantage value. Since we
     are dealing with maximum entropy RL in IRL, we add policy entropy

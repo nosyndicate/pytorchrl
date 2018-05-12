@@ -41,6 +41,7 @@ class IRLBatchPolopt(RLAlgorithm):
             irl_model=None,
             irl_model_wt=1.0,
             discrim_train_itrs=10,
+            discrim_batch_size=32,
             zero_environment_reward=False,
             init_irl_params=None,
             train_irl=True,
@@ -91,6 +92,7 @@ class IRLBatchPolopt(RLAlgorithm):
         self.irl_model_wt = irl_model_wt
         self.no_reward = zero_environment_reward
         self.discrim_train_itrs = discrim_train_itrs
+        self.discrim_batch_size = discrim_batch_size
         self.train_irl = train_irl
         self.irl_params = None
 
@@ -139,6 +141,7 @@ class IRLBatchPolopt(RLAlgorithm):
             max_itrs = self.discrim_train_itrs
             mean_loss = self.irl_model.fit(
                 paths, policy=self.policy, itr=itr,
+                batch_size=self.discrim_batch_size,
                 max_itrs=max_itrs, logger=logger)
 
             logger.record_tabular('IRLLoss', mean_loss)
