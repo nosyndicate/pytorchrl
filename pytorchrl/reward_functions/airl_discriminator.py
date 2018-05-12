@@ -78,7 +78,7 @@ class AIRLDiscriminator(nn.Module, Parameterized):
 
 
     def forward(self, obs_variable, action_variable, log_q_tau_var, target):
-        """
+        r"""
         Return the loss function of the discriminator to be optimized.
 
         As in discriminator, we only want to discriminate the expert from

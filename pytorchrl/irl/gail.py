@@ -26,6 +26,7 @@ class GAIL(SingleTimestepIRL):
         discriminator_args={},
         optimizer_class=optim.Adam,
         discriminator_lr=1e-3,
+        favor_zero_expert_reward=True,
     ):
         """
         Parameters
@@ -36,14 +37,25 @@ class GAIL(SingleTimestepIRL):
         discriminator_class (): Discriminator class
         discriminator_args (dict): dict of arguments for discriminator
         optimizer_class (): Optimizer class
-        discrmininator (float): learning rate for discriminator
-        discriminator_args (dict): dict of arguments for discriminator
-        l2_reg (float): L2 penalty for discriminator parameters
+        discrmininator_lr (float): learning rate for discriminator
+        favor_zero_expert_reward (boolean):
+            This is a really important flag for making some environment work, however,
+            I am still not understand why (#TODO, understand why this work and how to apply
+            to AIRL).
+            if it's true, then
+            0 for expert-like states, goes to -inf for non-expert-like states
+            compatible with envs with traj cutoffs for good (expert-like) behavior
+            e.g. mountain car, which gets cut off when the car reaches the destination
+            otherwise
+            0 for non-expert-like states, goes to +inf for expert-like states
+            compatible with envs with traj cutoffs for bad (non-expert-like) behavior
+            e.g. walking simulations that get cut off when the robot falls over
         """
         super(GAIL, self).__init__()
         self.obs_dim = env_spec.observation_space.flat_dim
         self.action_dim = env_spec.action_space.flat_dim
 
+        self.favor_zero_expert_reward = favor_zero_expert_reward
         # Get expert's trajectories
         self.expert_trajs = self.extract_paths(expert_trajs)
 
@@ -86,7 +98,6 @@ class GAIL(SingleTimestepIRL):
             self.optimizer.step()
 
             it.record('loss', loss.data.numpy())
-            # print(loss.data.numpy())
 
             if it.heartbeat:
                 print(it.itr_message())
@@ -103,9 +114,14 @@ class GAIL(SingleTimestepIRL):
         obs, acts = self.extract_paths(paths)
         scores = self.discriminator.prediction(obs, acts)
 
-        # reward = log D(s, a)
-        # Add small constant to prevent 0 reward
-        scores = np.log(scores[:, 0] + 1e-8)
+        if self.favor_zero_expert_reward:
+            # reward = log D(s, a)
+            # Add small constant to prevent 0 reward
+            scores = np.log(scores[:, 0] + 1e-8)
+        else:
+            # reward = -log(1 - D(s, a))
+            scores = -np.log(1 - scores[:, 0] + 1e-8)
+
         return self.unpack(scores, paths)
 
     @overrides
